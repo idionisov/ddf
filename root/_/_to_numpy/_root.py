@@ -2,13 +2,11 @@ import numpy as np
 import uproot
 from typing import Union
 from ROOT import TH1, TH2, TProfile, TProfile2D, TEfficiency
-from root.h import get_bin_range
+from ddf.root.h import get_bin_range
 
 
 
-
-
-def get_th1_as_numpy(hist: TH1,
+def _get_th1_as_numpy(hist: TH1,
     x_range: Union[tuple, None] = None
 ):
     """
@@ -32,14 +30,15 @@ def get_th1_as_numpy(hist: TH1,
     ix = 0
     for xbin in range(x_first_bin, x_last_bin):
         data[ix]      = hist.GetBinContent(xbin)
-        bin_edges[ix] = hist.GetBinLowEdge(xbin)
-    bin_edges[-1] = hist.GetBinUpEdge(xbin)
+        bin_edges[ix] = hist.GetXaxis().GetBinLowEdge(xbin)
+        ix+=1
+    bin_edges[-1] = hist.GetXaxis().GetBinUpEdge(xbin)
 
     return data, bin_edges
 
 
 
-def get_th2_as_numpy(hist: TH2,
+def _get_th2_as_numpy(hist: TH2,
     x_range: Union[tuple, None] = None,
     y_range: Union[tuple, None] = None
 ):
@@ -90,7 +89,7 @@ def get_th2_as_numpy(hist: TH2,
 
 
 
-def get_tprofile_1d_as_numpy(profile: TProfile,
+def _get_tprofile_1d_as_numpy(profile: TProfile,
     x_range: Union[tuple, None] = None
 ):
     """
@@ -117,12 +116,14 @@ def get_tprofile_1d_as_numpy(profile: TProfile,
         data[ix]      = profile.GetBinContent(xbin)
         data_err[ix]  = profile.GetBinError(xbin)
         bin_edges[ix] = profile.GetBinLowEdge(xbin)
+
+        ix+=1
     bin_edges[-1] = profile.GetBinUpEdge(xbin)
 
     return data, data_err, bin_edges
 
 
-def get_tprofile_2d_as_numpy(profile,
+def _get_tprofile_2d_as_numpy(profile,
     x_range: Union[tuple, None] = None,
     y_range: Union[tuple, None] = None
 ):
@@ -179,7 +180,7 @@ def get_tprofile_2d_as_numpy(profile,
 
 
 
-def get_tefficiency_1d_as_numpy(efficiency,
+def _get_tefficiency_1d_as_numpy(efficiency,
     x_range: Union[tuple, None] = None
 ):
     """
@@ -244,7 +245,7 @@ def get_tefficiency_1d_as_numpy(efficiency,
 
 
 
-def get_tefficiency_2d_as_numpy(efficiency,
+def _get_tefficiency_2d_as_numpy(efficiency,
     x_range: Union[tuple, None] = None,
     y_range: Union[tuple, None] = None
 ):

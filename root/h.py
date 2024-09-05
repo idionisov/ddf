@@ -1,6 +1,8 @@
+import numpy as np
 from typing import Union
 from ROOT import TH1, TH2, TH3, TH1F, TH2F, TProfile, TProfile2D, TEfficiency    
-from ._._h import *
+from ._._h import _get_subTH1, _get_subTH2, _get_x_from_bin_edges, _get_Xbin_range, _get_Ybin_range
+from uproot import Model
 
 def h_normalize(*hists,
                 normalized_integral: float = 1.,
@@ -61,9 +63,9 @@ def get_sub_hist(hist,
     """
 
     if (isinstance(hist, TH2) or isinstance(hist, TProfile2D)) and (y_low is not None) and (y_high is not None):
-        return get_subTH2(hist, x_low, x_high, y_low, y_high)
+        return _get_subTH2(hist, x_low, x_high, y_low, y_high)
     elif isinstance(hist, TH1) or isinstance(hist, TProfile):
-        return get_subTH1(hist, x_low, x_high)
+        return _get_subTH1(hist, x_low, x_high)
     else: return False
 
 
@@ -128,6 +130,9 @@ def get_bin_range(obj,
     - tuple (first_bin, last_bin): The first and last bins.
     """
 
-    if   axis.lower()=="x": return get_Xbin_range(obj, x_range=range)
-    elif axis.lower()=="y": return get_Ybin_range(obj, y_range=range)
-    else: raise ValueError(f"{axis} is an invalid axis!")
+    if axis.lower()=="x":
+        return _get_Xbin_range(obj, x_range=range)
+    elif axis.lower()=="y" and (isinstance(obj, TH2) or Model.is_instance(obj, "TH2")):
+        return _get_Ybin_range(obj, y_range=range)
+    else:
+        raise ValueError(f"{axis} is an invalid axis for type {type(obj)}!")

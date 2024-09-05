@@ -3,7 +3,7 @@ import numpy as np
 import uproot
 
 
-def get_uproot_th1_as_numpy(hist,
+def _get_uproot_th1_as_numpy(hist,
     x_range: Union[tuple, None] = None
 ):
     """
@@ -36,7 +36,7 @@ def get_uproot_th1_as_numpy(hist,
 
 
 
-def get_uproot_th2_as_numpy(hist,
+def _get_uproot_th2_as_numpy(hist,
     x_range: Union[tuple, None] = None,
     y_range: Union[tuple, None] = None
 ):
@@ -80,7 +80,7 @@ def get_uproot_th2_as_numpy(hist,
 
 
 
-def get_uproot_tprofile_1d_as_numpy(profile,
+def _get_uproot_tprofile_1d_as_numpy(profile,
     x_range: Union[tuple, None] = None
 ):
     """
@@ -115,7 +115,7 @@ def get_uproot_tprofile_1d_as_numpy(profile,
 
 
 
-def get_uproot_tprofile_2d_as_numpy(profile,
+def _get_uproot_tprofile_2d_as_numpy(profile,
     x_range: Union[tuple, None] = None,
     y_range: Union[tuple, None] = None
 ):

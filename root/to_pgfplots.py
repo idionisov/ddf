@@ -25,10 +25,10 @@ def print_pgfplots(obj):
     if   isinstance(obj, TGraphAsymmErrors):  print(get_TGraphAsymmErrors_as_pgfplot(obj))
     elif isinstance(obj, TGraphErrors):       print(get_TGraphErrors_as_pgfplot(obj))
     elif isinstance(obj, TGraph):             print(get_TGraph_as_pgfplot(obj))
-    elif isinstance(obj, TH2):                print(get_TH2_as_pgfplot(obj))
     elif isinstance(obj, TProfile2D):         print(get_TH2_as_pgfplot(obj))
-    elif isinstance(obj, TH1):                print(get_TH1_as_pgfplot(obj))
+    elif isinstance(obj, TH2):                print(get_TH2_as_pgfplot(obj))
     elif isinstance(obj, TProfile):           print(get_TProfile_as_pgfplot(obj))
+    elif isinstance(obj, TH1):                print(get_TH1_as_pgfplot(obj))
 
     # (2) Uproot Objects
     elif uproot.Model.is_instance(obj, "TGraphAsymmErrors"):   print(get_uproot_TGraphAsymmErrors_as_pgfplot(obj))

@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 
-def get_x_from_bin_edges(bin_edges):
+def _get_x_from_bin_edges(bin_edges):
     """
     Calculate the midpoints and widths of bins from a bin edges array.
 
@@ -26,7 +26,7 @@ def get_x_from_bin_edges(bin_edges):
     return bin_midpoints, bin_widths
 
 
-def get_subTH2(hist,
+def _get_subTH2(hist,
     x_low:  Union[float, int],
     x_high: Union[float, int],
     y_low:  Union[float, int],
@@ -94,7 +94,7 @@ def get_subTH2(hist,
 
 
 
-def get_subTH1(hist,
+def _get_subTH1(hist,
     x_low:  Union[float, int],
     x_high: Union[float, int]
 ) -> TObject:
@@ -150,7 +150,7 @@ def get_subTH1(hist,
 
 
 
-def get_Xbin_range(obj,
+def _get_Xbin_range(obj,
     x_range: Union[tuple, None]
 ):
     """
@@ -184,7 +184,7 @@ def get_Xbin_range(obj,
     return x_first_bin, x_last_bin
 
 
-def get_Ybin_range(obj,
+def _get_Ybin_range(obj,
     y_range: Union[tuple, None]
 ):
     """

@@ -3,7 +3,7 @@ import uproot
 import numpy as np
 from ROOT import TGraph, TGraph2D, TGraphErrors, TGraph2DErrors, TGraphAsymmErrors
 
-def get_dataframe_TGraph(tgraph: TGraph):
+def _get_dataframe_TGraph(tgraph: TGraph):
     """
     Converts a ROOT TGraph to a pandas DataFrame.
     
@@ -25,7 +25,7 @@ def get_dataframe_TGraph(tgraph: TGraph):
     return pd.DataFrame({'x': x, 'y': y})
 
 
-def get_dataframe_TH1_uproot(hist):
+def _get_dataframe_TH1_uproot(hist):
     """
     Converts an uproot TH1 or TProfile object to a pandas DataFrame.
     
@@ -45,7 +45,7 @@ def get_dataframe_TH1_uproot(hist):
     })
 
 
-def get_dataframe_TGraphErrors(tgraph: TGraphErrors):
+def _get_dataframe_TGraphErrors(tgraph: TGraphErrors):
     """
     Converts a ROOT TGraphErrors to a pandas DataFrame.
     
@@ -76,7 +76,7 @@ def get_dataframe_TGraphErrors(tgraph: TGraphErrors):
 
 
 
-def get_dataframe_TGraphAsymmErrors_uproot(tgraph: uproot.models.TGraph.Model_TGraphAsymmErrors_v3):
+def _get_dataframe_TGraphAsymmErrors_uproot(tgraph: uproot.models.TGraph.Model_TGraphAsymmErrors_v3):
     """
     Converts an uproot TGraphAsymmErrors to a pandas DataFrame.
     
@@ -99,7 +99,7 @@ def get_dataframe_TGraphAsymmErrors_uproot(tgraph: uproot.models.TGraph.Model_TG
     })
 
 
-def get_dataframe_TGraphAsymmErrors(tgraph: TGraphAsymmErrors):
+def _get_dataframe_TGraphAsymmErrors(tgraph: TGraphAsymmErrors):
     """
     Converts a ROOT TGraphAsymmErrors to a pandas DataFrame.
     
@@ -136,7 +136,7 @@ def get_dataframe_TGraphAsymmErrors(tgraph: TGraphAsymmErrors):
 
 
 
-def get_dataframe_TGraph2D(tgraph: TGraph2D):
+def _get_dataframe_TGraph2D(tgraph: TGraph2D):
     """
     Converts a ROOT TGraph2D to a pandas DataFrame.
     
@@ -162,7 +162,7 @@ def get_dataframe_TGraph2D(tgraph: TGraph2D):
     return pd.DataFrame({'x': x, 'y': y, 'z': z})
     
 
-def get_dataframe_TGraph2DErrors(tgraph: TGraph2DErrors):
+def _get_dataframe_TGraph2DErrors(tgraph: TGraph2DErrors):
     """
     Converts a ROOT TGraph2DErrors to a pandas DataFrame.
     
