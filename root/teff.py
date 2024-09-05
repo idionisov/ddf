@@ -1,3 +1,4 @@
+from typing import Union
 import numpy as np
 from ROOT import TEfficiency, TGraphAsymmErrors, TH1, TH2, TH1F, TObject
 
@@ -59,7 +60,7 @@ def set_stat_option(
         raise ValueError("Invalid statistic option!")
 
 
-def get_graph_from_teff_1D(teff: TEfficiency, teff_name='', teff_title='') -> TGraphAsymmErrors:
+def get_graph_from_teff_1D(teff: TEfficiency, teff_name: str='', teff_title: str='') -> TGraphAsymmErrors:
     '''
     Takes a 1D TEfficiency object and returns a TGraphAsymmErrors object,
     whose points are the efficiency with asymmetric errors.
@@ -143,11 +144,11 @@ def get_teff(h_passed, h_total,
     return teff
 
 def get_teff_dict(
-    h_dict: dict,
-    stat_option: str = 'normal',
+    h_dict:           dict,
+    stat_option:      str = 'normal',
     confidence_level: float = 0.682689,
-    suffix: str = "",
-    dict_of_teff: dict = {},
+    suffix:           str = "",
+    dict_of_teff:     dict = {},
 ) -> dict:
     
     for key in h_dict:
@@ -203,8 +204,8 @@ def get_teff_dict(
 
 
 def calculate_eff(
-    n_passed:         int | float,
-    n_total:          int | float,
+    n_passed:         Union[int, float],
+    n_total:          Union[int, float],
     stat_option:      str   = "normal",
     confidence_level: float = 0.6826894921370859
 ):

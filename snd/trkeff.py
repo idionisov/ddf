@@ -1,5 +1,5 @@
 from ROOT import TChain, TGraph, kBlack, MuFilter, TClonesArray, sndRecoTrack, TMath, TVector3
-from snd.trk import xy_eff_range, is_good, is_within_veto_bar, is_within_us5_bar, is_within_ds3
+from .trk import xy_eff_range, is_good, is_within_veto_bar, is_within_us5_bar, is_within_ds3
 import numpy as np
 from typing import Callable
 

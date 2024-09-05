@@ -10,16 +10,15 @@ xy_eff_range = {
     'max': {'x': -10, 'y': 50}
 }
 
-track_types = np.array([1, 11, 3, 13], dtype="int")
+track_types = (1, 3, 11, 13)
 
 def sys(track_type: int) -> str:
     '''
     For each track type, returns the corresponding detector subsystem as string abbreviation.
     '''
-
     if   track_type==1 or track_type==11: return 'sf'
     elif track_type==3 or track_type==13: return 'ds'
-    else: raise ValueError("Invalid track type!")
+    else: raise ValueError(f"{track_type} is an invalid track type!")
 
 def sys_name(track_type: int) -> str:
     '''
@@ -28,7 +27,7 @@ def sys_name(track_type: int) -> str:
 
     if   track_type==1 or track_type==11: return 'Scifi'
     elif track_type==3 or track_type==13: return 'DS'
-    else: raise ValueError("Invalid track type!")
+    else: raise ValueError(f"{track_type} is an invalid track type!")
 
 
 def alg(track_type: int) -> str:
@@ -38,7 +37,7 @@ def alg(track_type: int) -> str:
 
     if   track_type==1  or track_type==3:  return 'st'
     elif track_type==11 or track_type==13: return 'ht'
-    else: raise ValueError("Invalid track type!")
+    else: raise ValueError(f"{track_type} is an invalid track type!")
 
 
 def alg_name(track_type: int) -> str:
@@ -48,7 +47,7 @@ def alg_name(track_type: int) -> str:
 
     if   track_type==1  or track_type==3:  return 'simple tracking'
     elif track_type==11 or track_type==13: return 'Hough transform'
-    else: raise ValueError("Invalid track type!")
+    else: raise ValueError(f"{track_type} is an invalid track type!")
 
 def n_type(track_type: int) -> str:
     '''
@@ -57,7 +56,7 @@ def n_type(track_type: int) -> str:
 
     if   track_type==1  or track_type==3:  return 'clusters'
     elif track_type==11 or track_type==13: return 'hits'
-    else: raise ValueError("Invalid track type!")
+    else: raise ValueError(f"{track_type} is an invalid track type!")
 
 def n_name(track_type: int) -> str:
     '''
@@ -68,7 +67,7 @@ def n_name(track_type: int) -> str:
     elif track_type == 11: return 'Scifi hits'
     elif track_type == 3:  return 'DS clusters'
     elif track_type == 13: return 'DS hits'
-    else: raise ValueError("Invalid track type!")
+    else: raise ValueError(f"{track_type} is an invalid track type!")
 
 
 class range_tt:

@@ -1,4 +1,4 @@
-from .trk_types import *
+from ._._trk import *
 from ROOT import sndRecoTrack, MuFilterHit, MuFilter, TVector3, TMath, TClonesArray
 
 def is_good(
@@ -131,27 +131,27 @@ def is_within_ds3(track: sndRecoTrack) -> bool:
 
     return is_within_DS3
 
-def get_station(Z: float) -> int:
+def get_station(z: float) -> int:
     """
     Gets the station that corresponds to a given Z-coordinate value.
     Returns values from 0 to 4 for SciFi and 0 to 2 for DS.
 
     Parameters:
-    - Z (float): The Z-ccordinate.
+    - Z (float): The Z-coordinate.
 
     Returns:
     - int: The station number that corresponds to the given Z.
     """
 
-    if   Z > 285 and Z < 306:   return 0
-    elif Z > 306 and Z < 320:   return 1
-    elif Z > 320 and Z < 333:   return 2
-    elif Z > 333 and Z < 346:   return 3
-    elif Z > 346 and Z < 360:   return 4
+    if   z > 285 and z < 306:   return 0
+    elif z > 306 and z < 320:   return 1
+    elif z > 320 and z < 333:   return 2
+    elif z > 333 and z < 346:   return 3
+    elif z > 346 and z < 360:   return 4
 
-    elif Z > 485 and Z < 505:   return 0
-    elif Z > 505 and Z < 530:   return 1
-    elif Z > 530 and Z < 550:   return 2
+    elif z > 485 and z < 505:   return 0
+    elif z > 505 and z < 530:   return 1
+    elif z > 530 and z < 550:   return 2
 
     else: return -999
 

@@ -1,7 +1,8 @@
+from typing import Union
 from time import time
 from datetime import datetime
 from scipy.stats import norm
-from ._cl import clopper_pearson_interval, bayesian_interval
+from ._._pyfuncs import _clopper_pearson_interval, _bayesian_interval
 
 def get_cl_sigma(sigma: int = 1) -> float:
     return 2 * norm.cdf(sigma) - 1
@@ -33,8 +34,8 @@ def dicts_have_the_same_structure(
 
 
 def get_eff_with_error(
-    passed:           int | float,
-    total:            int | float,
+    passed:           Union[int, float],
+    total:            Union[int, float],
     stat_option:      str   = "kfcp",
     confidence_level: float = 0.6826894921370859
 ):
@@ -45,10 +46,10 @@ def get_eff_with_error(
         so=="clopper-pearson" or so=="clopper.pearson" or
         so=="clopper:pearson" or so=="clopperpearson"
     ):
-        eff, deff_up, deff_low = clopper_pearson_interval(passed, total, confidence_level=confidence_level)
+        eff, deff_up, deff_low = _clopper_pearson_interval(passed, total, confidence_level=confidence_level)
 
     elif so=="bayesian" or so=="kbbayesian":
-        eff, deff_up, deff_low = bayesian_interval(passed, total, confidence_level=confidence_level)
+        eff, deff_up, deff_low = _bayesian_interval(passed, total, confidence_level=confidence_level)
 
     else: raise ValueError("Invalid statistic option!")
 

@@ -27,10 +27,10 @@ def get_x_from_bin_edges(bin_edges):
 
 
 def get_subTH2(hist,
-    x_low:  float | int,
-    x_high: float | int,
-    y_low:  float | int,
-    y_high: float | int
+    x_low:  Union[float, int],
+    x_high: Union[float, int],
+    y_low:  Union[float, int],
+    y_high: Union[float, int]
 ) -> TObject:
     """
     Extracts the central region of a TH2 or TProfile2D object and returns a new TH2 or TProfile2D object respectively.
@@ -95,8 +95,8 @@ def get_subTH2(hist,
 
 
 def get_subTH1(hist,
-    x_low: float | int,
-    x_high: float | int
+    x_low:  Union[float, int],
+    x_high: Union[float, int]
 ) -> TObject:
     """
     Extracts the central region of a TH1 or TProfile histogram and returns a new histogram or profile.

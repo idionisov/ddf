@@ -1,6 +1,6 @@
 from ROOT import TMath, TChain, TVector3
 
-mc_factors: dict = {
+PbPb_factors: dict = {
     'EMD': 0.1388888888888889,
     'NI':  2.003205128205128
 }
@@ -122,10 +122,8 @@ def get_angle_xz(mc_track) -> float:
     Returns:
     - The XZ projection of the mc_track angle in radians.
     """
-
     px = mc_track.GetPx()
     pz = mc_track.GetPz()
-
     return TMath.ATan(px/pz)
 
 def get_angle_yz(mc_track) -> float:
@@ -136,10 +134,8 @@ def get_angle_yz(mc_track) -> float:
     Returns:
     - The YZ projection of the mc_track angle in radians.
     """
-
     py = mc_track.GetPy()
     pz = mc_track.GetPz()
-
     return TMath.ATan(py/pz)
 
 def get_intersection_mc(mc_track, z: float = 490.) -> TVector3:
