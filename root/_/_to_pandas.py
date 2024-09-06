@@ -39,9 +39,10 @@ def _get_dataframe_TH1_uproot(hist):
 
     return pd.DataFrame({
         'x':  np.array(hist.axis().centers(), dtype=np.float64),
-        'y':  np.array(hist.values(), dtype=np.float64),
-        'ex': np.array((hist.axis().edges()[1:] - hist.axis().edges()[:-1])/2, dtype=np.float64),
-        'ey': np.array(hist.errors(), dtype=np.float64)
+        'y':  np.array(hist.values(),         dtype=np.float64),
+        'ex': np.array((hist.axis().edges()[1:] - hist.axis().edges()[:-1])/2,
+                                              dtype=np.float64),
+        'ey': np.array(hist.errors(),         dtype=np.float64)
     })
 
 
@@ -122,8 +123,8 @@ def _get_dataframe_TGraphAsymmErrors(tgraph: TGraphAsymmErrors):
 
 
     for i in range(n_points):
-        x[i] = tgraph.GetPointX(i)
-        y[i] = tgraph.GetPointY(i)
+        x[i]       = tgraph.GetPointX(i)
+        y[i]       = tgraph.GetPointY(i)
         ex_low[i]  = tgraph.GetErrorXlow(i)
         ex_high[i] = tgraph.GetErrorXhigh(i)
         ey_low[i]  = tgraph.GetErrorYlow(i)
@@ -189,6 +190,4 @@ def _get_dataframe_TGraph2DErrors(tgraph: TGraph2DErrors):
         ex[i] = tgraph.GetErrorX(i)
         ey[i] = tgraph.GetErrorY(i)
         ez[i] = tgraph.GetErrorZ(i)
-
-
     return pd.DataFrame({'x': x, 'y': y, 'z': z, 'ex': ex, 'ey': ey, 'ez': ez})

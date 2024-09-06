@@ -5,18 +5,25 @@ from scipy.stats import norm
 from ._._pyfuncs import _clopper_pearson_interval, _bayesian_interval
 
 def get_cl_sigma(sigma: int = 1) -> float:
+    """
+    Args:
+        σ (int): Number of standard deviations of confidence level.
+
+    Returns:
+        CL (float): The confidence level as a float from 0 to 1. 
+    """
     return 2 * norm.cdf(sigma) - 1
 
 def get_current_dmy():
     day   = datetime.now().day
     month = datetime.now().month
     year  = datetime.now().year
-
     return day, month, year
 
 
 def dicts_have_the_same_structure(
-    dict1: dict, dict2: dict
+    dict1: dict,
+    dict2: dict
 ) -> bool:
     if dict1.keys() != dict2.keys():
         return False
@@ -28,9 +35,7 @@ def dicts_have_the_same_structure(
         else:
             if type(dict1[key]) != type(dict2[key]):
                 return False
-
     return True
-
 
 
 def get_eff_with_error(
@@ -39,21 +44,23 @@ def get_eff_with_error(
     stat_option:      str   = "kfcp",
     confidence_level: float = 0.6826894921370859
 ):
-    so = stat_option.lower()
+    stat_option = stat_option.lower()
+    
+    clopper_pearson_options = {"clopper_pearson", "kfcp", "clopper pearson", 
+                               "clopper-pearson", "clopper.pearson", 
+                               "clopper:pearson", "clopperpearson"}
+    bayesian_options = {"bayesian", "kbbayesian"}
+    all_options = clopper_pearson_options.join(bayesian_options)    
 
-    if (
-        so=="clopper_pearson" or so=="kfcp" or so=="clopper pearson" or
-        so=="clopper-pearson" or so=="clopper.pearson" or
-        so=="clopper:pearson" or so=="clopperpearson"
-    ):
+    if stat_option in clopper_pearson_options:
         eff, deff_up, deff_low = _clopper_pearson_interval(passed, total, confidence_level=confidence_level)
-
-    elif so=="bayesian" or so=="kbbayesian":
+    elif stat_option in {"bayesian", "kbbayesian"}:
         eff, deff_up, deff_low = _bayesian_interval(passed, total, confidence_level=confidence_level)
-
-    else: raise ValueError("Invalid statistic option!")
+    else:
+        raise ValueError(f"Invalid statistic option '{stat_option}'! Allowed options are: {', '.join(allowed_options)}")
 
     return eff, deff_up, deff_low
+
 
 
 

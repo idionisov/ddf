@@ -12,17 +12,16 @@ def there_is_a_muon(
     '''
     Checks if there is a passing muon in a Monte Carlo event.
 
-    Parameters:
+    Args:
     - mc_event (TChain)
 
     Returns:
-    - bool of whether there was a passing muon in thsi event.
+    - bool: Whether there was a passing muon in this event.
     '''
 
     for mcTrack in mc_event.MCTrack:
         if TMath.Abs(mcTrack.GetPdgCode()) == 13:
             return True
-
     return False
 
 
@@ -34,7 +33,7 @@ def should_be_a_track(
     }
 ) -> dict:
     """
-    Checks if an event satisfies the conditions for track reconstruction to take place
+    Checks if an SND@LHC event satisfies the conditions for track reconstruction to take place
 
     Parameters:
     - mc_event (TChain);

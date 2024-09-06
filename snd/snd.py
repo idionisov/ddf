@@ -1,16 +1,140 @@
+import os
+import re
 from subprocess import run
-from typing import Callable
+from typing import Callable, Union
 from time import time
 from ddf.pyfuncs import print_status_with_time
 from ROOT import SNDLHCEventHeader, TChain, TClonesArray, TGraphAsymmErrors, TEfficiency
 import numpy as np
 import roostyling
 
-def get_snd_year(snd_run: int) -> int:
-    '''
-    Get the year that corresponds to an SND@LHC run.
-    '''
-    return int(run(['get_run_year', f'{snd_run}'], capture_output=True).stdout.decode('utf-8'));
+
+
+def fsy(
+    data_dir: str = "/eos/experiment/sndlhc/convertedData/physics" 
+) -> int:
+    if not os.path.isdir(data_dir): 
+        eos_snd_data = os.getenv("EOS_SND_DATA")
+        snd_data     = os.getenv("SND_DATA")
+        
+        if eos_snd_data and os.path.isdir(eos_snd_data):
+            data_dir = eos_snd_data
+        elif snd_data and os.path.isdir(snd_data):
+            data_dir = snd_data
+        else: raise ValueError(f"Invalid data directory: {data_dir}")
+   
+    year_dirs = [d for d in os.listdir(data_dir) if re.match(r'^\d+$', d)] 
+    if year_dirs:
+        sorted_years = sorted(map(int, year_dirs), reverse=True)
+        return sorted_years[-1]
+    else: raise ValueError("No data year directories have been found!")
+
+
+
+def lsy(
+    data_dir: str = "/eos/experiment/sndlhc/convertedData/physics"
+):
+    if not os.path.isdir(data_dir): 
+        eos_snd_data = os.getenv("EOS_SND_DATA")
+        snd_data     = os.getenv("SND_DATA")
+        
+        if eos_snd_data and os.path.isdir(eos_snd_data):
+            data_dir = eos_data_dir
+        elif snd_data and os.path.isdir(snd_data):
+            data_dir = data_dir
+        else: raise ValueError(f"Invalid data directory: {data_dir}")
+    
+    year_dirs = [d for d in os.listdir(data_dir) if re.match(r'^\d+$', d)] 
+    if year_dirs:
+        sorted_years = sorted(map(int, year_dirs), reverse=False)
+        return sorted_years[-1]
+    else: raise ValueError("No data year directories have been found!")
+
+
+def fsr(
+    year:     Union[int, None] = None,
+    data_dir: str = "/eos/experiment/sndlhc/convertedData/physics" 
+):
+    if year is None: year = fsy()
+    
+    if not os.path.isdir(data_dir):
+        eos_snd_data = os.getenv("EOS_SND_DATA")
+        snd_data     = os.getenv("SND_DATA")
+        
+        if eos_snd_data and os.path.isdir(eos_snd_data):
+            data_dir = eos_snd_data
+        elif snd_data and os.path.isdir(snd_data):
+            data_dir = snd_data
+        else: raise ValueError(f"Invalid data directory: {data_dir}")
+    data_dir = f"{data_dir}/{year}" 
+
+    run_files = [f for f in os.listdir(data_dir) if re.match(r"^run_\d+$", f)]
+    if run_files:
+        run_numbers = sorted(int(re.sub(r"^run_0*", "", f)) for f in run_files if re.search(r'[0-9]+', f))
+        if run_numbers:
+            return run_numbers[0] 
+    
+    else: raise ValueError("No data run directories have been found!")
+
+
+def lsr(
+    year:     Union[int, None] = None,
+    data_dir: str = "/eos/experiment/sndlhc/convertedData/physics" 
+):
+    if year is None: year = lsy()
+    
+    if not os.path.isdir(data_dir):
+        eos_snd_data = os.getenv("EOS_SND_DATA") 
+        snd_data     = os.getenv("SND_DATA")
+        
+        if eos_snd_data and os.path.isdir(eos_snd_data):
+            data_dir = eos_snd_data
+        elif snd_data and os.path.isdir(snd_data):
+            data_dir = snd_data
+        else: raise ValueError(f"Invalid data directory: {data_dir}")
+    data_dir = f"{data_dir}/{year}"
+    
+    run_files = [f for f in os.listdir(data_dir) if re.match(r"^run_\d+$", f)]
+    if run_files:
+        run_numbers = sorted(int(re.sub(r"^run_0*", "", f)) for f in run_files)
+        if run_numbers:
+            return run_numbers[-1]
+    
+    else: raise ValueError("No data run directories have been found!")
+
+
+def get_snd_year(
+    snd_run:  int,
+    data_dir: str = "/eos/experiment/sndlhc/convertedData/physics"
+) -> int:
+
+    if not os.path.isdir(data_dir):
+        eos_snd_data = os.getenv("EOS_SND_DATA") 
+        snd_data     = os.getenv("SND_DATA")
+        
+        if eos_snd_data and os.path.isdir(eos_snd_data):
+            data_dir = eos_snd_data
+        elif snd_data and os.path.isdir(snd_data):
+            data_dir = snd_data
+        else: raise ValueError("Invalid data directory!")
+
+    first_snd_year = fsy(data_dir=data_dir)
+    last_snd_year  = lsy(data_dir=data_dir)
+
+    run_year = None
+    for year in range(first_snd_year, last_snd_year+1):
+        if not os.path.isdir(f"{data_dir}/{year}"): continue
+
+
+        first_run_num = fsr(year=year, data_dir=data_dir)
+        last_run_num  = lsr(year=year, data_dir=data_dir)
+
+        if (snd_run >= first_run_num and snd_run <= last_run_num):
+            run_year=year
+            break
+
+    if run_year is not None: return run_year
+    else: raise ValueError(f"Run number {snd_run} was not found!")
 
 def get_snd_years(snd_runs: list) -> dict:
     '''
@@ -18,11 +142,7 @@ def get_snd_years(snd_runs: list) -> dict:
     whose keys are those runs and whose values are the years
     that correspond to them.
     '''
-
-    years = {}
-    for snd_run in snd_runs:
-        years[snd_run] = get_snd_year(snd_run)
-
+    years = {snd_run: get_snd_year(snd_run) for snd_run in snd_runs}
     return years
 
 def get_station(Z: float) -> int:

@@ -75,24 +75,17 @@ def save_dict_to_root(*obj_dicts,
         if not isinstance(obj_dict, dict):
             raise ValueError("Cannot save objects that are not stored in a dictionary!")
         
-        # Check if the specified top-level directory exists, if not create it
         if not tfile.GetDirectory(tdir_path):
             tfile.mkdir(tdir_path)
 
-        # Get the top-level directory
         dir = tfile.GetDirectory(tdir_path)
-
-        # Start the recursive saving process
         save_recursively(obj_dict, dir)
-
-        # Move back to the root directory of the TFile
         tfile.cd()
 
 
 def print_dict_all(obj):
     
     msg: str = obj.GetName()
-
     if isinstance(obj, TH1) or isinstance(obj, TH2):
         msg = f"{msg}   Entries: {int(obj.GetEntries())}   Integral: {obj.Integral():.03f}"
     

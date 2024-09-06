@@ -9,55 +9,50 @@ def set_stat_option(
 ):
     so = stat_option.lower()
 
-    if so=="normal" or so=="kfnormal":
+    normal_options           = {"normal", "kfnormal"}
+    clopper_pearson_options  = {"clopper_pearson", "kfcp", "clopper pearson", 
+                               "clopper-pearson", "clopper.pearson", 
+                               "clopper:pearson", "clopperpearson"}
+    bayesian_options         = {"bayesian", "kbbayesian"}
+    wilson_options           = {"wilson", "kfwilson"}
+    feldman_cousings_options = {"feldman_cousins", "kffc", 
+                                "feldman cousins", "feldman-cousings",
+                                "feldman:cousins", "feldman.cousins", 
+                                "feldmancousins"}
+    agresti_coull_options    = {"agresti_coull", "kfac",
+                                "agresti coull", "agresti-coull",
+                                "agresti:coull", "agresti.coull",
+                                "agresticoull"}
+    mid_p_interval_options   = {"mid_p_interval", "kmidp",
+                                "mid p interval", "mid-p-interval",
+                                "mid:p:interval", "mid.p.interval",
+                                "midpinterval"}
+    jeffrey_options          = {"jeffrey", "kbjeffrey"}
+    uniform_prior_options    = {"uniform_prior", "kbuniform",
+                                "uniform prior", "uniform-prior",
+                                "uniform:prior", "uniform.prior",
+                                "uniformprior"}
+
+    if so in normal_options:
         teff.SetStatisticOption(TEfficiency.kFNormal)
-
-    elif (
-        so=="clopper_pearson" or so=="kfcp" or so=="clopper pearson" or
-        so=="clopper-pearson" or so=="clopper.pearson" or
-        so=="clopper:pearson" or so=="clopperpearson"
-    ):
+    elif so in clopper_pearson_options:
         teff.SetStatisticOption(TEfficiency.kFCP)
-
-    elif so=="bayesian" or so=="kbbayesian":
+    elif so in bayesian_options:
         teff.SetStatisticOption(TEfficiency.kBBayesian)
-
-    elif so=="wilson" or so=="kfwilson":
+    elif so in wilson_options:
         teff.SetStatisticOption(TEfficiency.kFWilson)
-
-    elif (
-        so=="feldman_cousins" or so=="kffc" or so=="feldman cousins" or
-        so=="feldman-cousings" or so=="feldman:cousins" or so=="feldman.cousins" or
-        so=="feldmancousins"
-    ):
-        teff.SetStatisticOption(TEfficiency.kFWilson)
-
-    elif (
-        so=="agresti_coull" or so=="kfac" or "agresti coull" or
-        so=="agresti-coull" or so=="agresti:coull" or
-        so=="agresti.coull" or so=="agresticoull"
-    ):
+    elif feldman_cousings_options:
+        teff.SetStatisticOption(TEfficiency.kFFC)
+    elif so in agresti_coull_options:
         teff.SetStatisticOption(TEfficiency.kFAC)
-
-    elif (
-        so=="mid_p_interval" or so=="kmidp" or so=="mid p interval" or
-        so=="mid-p-interval" or so=="mid:p:interval" or
-        so=="mid.p.interval" or so=="midpinterval"
-    ):
+    elif so in mid_p_interval_options:
         teff.SetStatisticOption(TEfficiency.kMidP)
-
-    elif so=="jeffrey" or so=="kbjeffrey":
+    elif so in jeffrey_options:
         teff.SetStatisticOption(TEfficiency.kBJeffrey)
-
-    elif (
-        so=="uniform_prior" or so=="kbuniform" or so=="uniform prior" or
-        so=="uniform-prior" or so=="uniform:prior" or "uniform.prior" or
-        so=="uniformprior"
-    ):
+    elif so in uniform_prior_options:
         teff.SetStatisticOption(TEfficiency.kBUniform)
 
-    else:
-        raise ValueError("Invalid statistic option!")
+    else: raise ValueError(f"Invalid statistic option '{stat_option}'!")
 
 
 def get_graph_from_teff_1D(teff: TEfficiency, teff_name: str='', teff_title: str='') -> TGraphAsymmErrors:
@@ -138,9 +133,8 @@ def get_teff(h_passed, h_total,
     else:
         raise ValueError("Inconsistent histograms!")
     
-    if name and teff:  teff.SetName(name)
+    if name  and teff: teff.SetName(name)
     if title and teff: teff.SetTitle(title)
-
     return teff
 
 def get_teff_dict(

@@ -46,19 +46,16 @@ def _get_subTH2(hist,
     - TH2 or TProfile2D: A new TH2 or TProfile2D instance containing the bins within the specified region.
     """
     
-    # Find the bin numbers corresponding to the specified x and y bounds
     x_bin_low  = hist.GetXaxis().FindBin(x_low)
     x_bin_high = hist.GetXaxis().FindBin(x_high)
     y_bin_low  = hist.GetYaxis().FindBin(y_low)
     y_bin_high = hist.GetYaxis().FindBin(y_high)
     
-    # Use the exact bin edges for the new histogram
     new_x_low  = hist.GetXaxis().GetBinLowEdge(x_bin_low)
     new_x_high = hist.GetXaxis().GetBinUpEdge(x_bin_high)
     new_y_low  = hist.GetYaxis().GetBinLowEdge(y_bin_low)
     new_y_high = hist.GetYaxis().GetBinUpEdge(y_bin_high)
 
-    # Create a new histogram with the correct binning
     h_name   = f'{hist.GetName()}_subset'
     h_title  = hist.GetTitle()
     n_bins_x = x_bin_high - x_bin_low + 1
@@ -75,7 +72,6 @@ def _get_subTH2(hist,
     else:
         raise ValueError("Input must be a TH2 or TProfile2D object")
     
-    # Fill the new histogram with the appropriate bin contents
     for i in range(x_bin_low, x_bin_high + 1):
         for j in range(y_bin_low, y_bin_high + 1):
             bin_content = hist.GetBinContent(i, j)

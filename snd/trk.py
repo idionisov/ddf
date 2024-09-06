@@ -73,7 +73,6 @@ def get_doca(
     pq  = left-pos
     uCrossv = (right - left).Cross(mom)
     doca = pq.Dot(uCrossv)/uCrossv.Mag()
-
     return TMath.Abs(doca)
 
 
@@ -99,7 +98,6 @@ def get_intersection(track: sndRecoTrack, Z: float) -> TVector3:
         track_start.Y() + track_slope*track_mom.Y(),
         Z
     )
-
     return intersection_point
 
 def is_within_ds3(track: sndRecoTrack) -> bool:
@@ -128,7 +126,6 @@ def is_within_ds3(track: sndRecoTrack) -> bool:
         ds3_point.Y() > y_min and
         ds3_point.Y() < y_max
     ): is_within_DS3 = True
-
     return is_within_DS3
 
 def get_station(z: float) -> int:
@@ -175,7 +172,6 @@ def is_within_us5_bar(track: sndRecoTrack, mf_hits: TClonesArray, MuFi: MuFilter
         if (get_doca(mf_hit, track, MuFi) <= 3):
             is_within_us5 = True
             break
-
     return is_within_us5
 
 
@@ -198,7 +194,6 @@ def is_within_veto_bar(track: sndRecoTrack, mf_hits: TClonesArray, MuFi: MuFilte
         if (get_doca(mf_hit, track, MuFi) <= 3):
             is_within_veto = True
             break
-
     return is_within_veto
 
 
