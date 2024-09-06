@@ -50,14 +50,13 @@ def get_eff_with_error(
                                "clopper-pearson", "clopper.pearson", 
                                "clopper:pearson", "clopperpearson"}
     bayesian_options = {"bayesian", "kbbayesian"}
-    all_options = clopper_pearson_options.join(bayesian_options)    
+    allowed_options = clopper_pearson_options.join(bayesian_options)    
 
     if stat_option in clopper_pearson_options:
         eff, deff_up, deff_low = _clopper_pearson_interval(passed, total, confidence_level=confidence_level)
     elif stat_option in {"bayesian", "kbbayesian"}:
         eff, deff_up, deff_low = _bayesian_interval(passed, total, confidence_level=confidence_level)
-    else:
-        raise ValueError(f"Invalid statistic option '{stat_option}'! Allowed options are: {', '.join(allowed_options)}")
+    else: raise ValueError(f"Invalid statistic option '{stat_option}'! Allowed options are: {', '.join(allowed_options)}")
 
     return eff, deff_up, deff_low
 
