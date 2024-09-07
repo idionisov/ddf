@@ -160,7 +160,7 @@ def _get_Xbin_range(obj,
     - tuple (x_first_bin, x_last_bin): The first and last bins.
     """
 
-    if not obj.GetXaxis(): return ValueError(f"Type {type(obj)} doesn't have X bin range!")
+    if not obj.GetXaxis(): raise ValueError(f"Type {type(obj)} doesn't have X bin range!")
 
     if isinstance(x_range, tuple):
         if isinstance(x_range[0], (int, float)):
@@ -194,7 +194,7 @@ def _get_Ybin_range(obj,
     - tuple (y_first_bin, y_last_bin): The first and last bins.
     """
     
-    if not obj.GetXaxis(): return ValueError(f"Type {type(obj)} doesn't have X bin range!")
+    if not obj.GetXaxis(): raise ValueError(f"Type {type(obj)} doesn't have X bin range!")
 
     if isinstance(y_range, tuple):
         if isinstance(y_range[0], (int, float)):

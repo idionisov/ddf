@@ -35,7 +35,7 @@ def _get_dataframe_TH1_uproot(hist):
     Returns:
     pandas.DataFrame: A DataFrame containing the values of the TH1F.
     """
-    if not uproot.Model.is_instance(hist, "TH1"): return ValueError(f"{type(hist)} is not an uproot TH1 object!")
+    if not uproot.Model.is_instance(hist, "TH1"): raise ValueError(f"{type(hist)} is not an uproot TH1 object!")
 
     return pd.DataFrame({
         'x':  np.array(hist.axis().centers(), dtype=np.float64),
@@ -56,7 +56,7 @@ def _get_dataframe_TGraphErrors(tgraph: TGraphErrors):
     Returns:
     pandas.DataFrame: A DataFrame containing the values of the TGraphErrors.
     """
-    if not uproot.Model.is_instance(tgraph, "TGraph"): return ValueError(f"{type(tgraph)} is not an uproot TGraph object!")
+    if not uproot.Model.is_instance(tgraph, "TGraph"): raise ValueError(f"{type(tgraph)} is not an uproot TGraphErrors object!")
 
     n_points = tgraph.GetN()
     x  = np.zeros(n_points, dtype=np.float64)
@@ -88,7 +88,7 @@ def _get_dataframe_TGraphAsymmErrors_uproot(tgraph: uproot.models.TGraph.Model_T
     pandas.DataFrame: A DataFrame containing the values of the TGraphAsymmErrors.
     """
     if not uproot.Model.is_instance(tgraph, "TGraphErrors"):
-        return ValueError(f"{type(tgraph)} is not an uproot TGraphErrors object!")
+        raise ValueError(f"{type(tgraph)} is not an uproot TGraphErrors object!")
 
     return pd.DataFrame({
         'x':   np.array(tgraph.member("fX"),      dtype=np.float64),
@@ -111,7 +111,7 @@ def _get_dataframe_TGraphAsymmErrors(tgraph: TGraphAsymmErrors):
     pandas.DataFrame: A DataFrame containing the values of the TGraphAsymmErrors.
     """
     if not uproot.Model.is_instance(tgraph, "TGraphAsymmErrors"):
-        return ValueError(f"{type(tgraph)} is not an uproot TGraphAsymmErrors object!")
+        raise ValueError(f"{type(tgraph)} is not an uproot TGraphAsymmErrors object!")
 
     n_points = tgraph.GetN()
     x       = np.zeros(n_points, dtype=np.float64)
@@ -148,7 +148,7 @@ def _get_dataframe_TGraph2D(tgraph: TGraph2D):
     pandas.DataFrame: A DataFrame containing the values of the TGraph2D.
     """
     
-    if not uproot.Model.is_instance(tgraph, "TGraph2D"): return ValueError(f"{type(tgraph)} is not an uproot TGraph2D object!")
+    if not uproot.Model.is_instance(tgraph, "TGraph2D"): raise ValueError(f"{type(tgraph)} is not an uproot TGraph2D object!")
 
     n_points = tgraph.GetN()
     x = np.zeros(n_points, dtype=np.float64)
@@ -173,7 +173,7 @@ def _get_dataframe_TGraph2DErrors(tgraph: TGraph2DErrors):
     Returns:
     pandas.DataFrame: A DataFrame containing the values of the TGraph2DErrors.
     """
-    if not uproot.Model.is_instance(tgraph, "TGraph2DErrors"): return ValueError(f"{type(tgraph)} is not an uproot TGraph2DErrors object!")
+    if not uproot.Model.is_instance(tgraph, "TGraph2DErrors"): raise ValueError(f"{type(tgraph)} is not an uproot TGraph2DErrors object!")
 
     n_points = tgraph.GetN()
     x = np.zeros(n_points,  dtype=np.float64)

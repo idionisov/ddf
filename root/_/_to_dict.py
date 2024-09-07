@@ -39,7 +39,7 @@ def _get_dict_th1(hist: TH1):
     }
 
 def _get_dict_th1_uproot(hist):
-    if not uproot.Model.is_instance(hist, "TH1"): return ValueError(f"{type(hist)} is not an uproot TH1 object!")
+    if not uproot.Model.is_instance(hist, "TH1"): raise ValueError(f"{type(hist)} is not an uproot TH1 object!")
 
     return {
         'bin_edges': np.array(hist.axis().edges(), dtype=np.float64),
