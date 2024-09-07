@@ -5,7 +5,7 @@ from ROOT import TGraph, TGraph2D, TGraphErrors, TGraph2DErrors, TGraphAsymmErro
 from ._._to_pandas import _get_dataframe_TGraph, _get_dataframe_TGraph2D, \
     _get_dataframe_TGraph2DErrors, _get_dataframe_TGraphAsymmErrors, \
     _get_dataframe_TGraphAsymmErrors_uproot, _get_dataframe_TGraphErrors, \
-    _get_dataframe_TH1_uproot
+    _get_dataframe_TH1_uproot, _get_dataframe_TGraphErrors_uproot, _get_dataframe_TGraph_uproot
 
 def get_as_pandas(obj):
     """
@@ -26,7 +26,10 @@ def get_as_pandas(obj):
     
     elif uproot.Model.is_instance(obj, "TGraphAsymmErrors"):
         return _get_dataframe_TGraphAsymmErrors_uproot(obj)
-    
+    elif uproot.Model.is_instance(obj, "TGraphErrors"):
+        return _get_dataframe_TGraphErrors_uproot(obj)
+    elif uproot.Model.is_instance(obj, "TGraph"):
+        return _get_dataframe_TGraph_uproot(obj)
     elif uproot.Model.is_instance(obj, "TH1"):
         return _get_dataframe_TH1_uproot(obj)
     
