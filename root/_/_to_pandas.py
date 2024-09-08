@@ -153,11 +153,11 @@ def _get_dataframe_TH1_uproot(hist):
     if not uproot.Model.is_instance(hist, "TH1"): raise ValueError(f"{type(hist)} is not an uproot TH1 object!")
 
     return pd.DataFrame({
-        'x':  np.array(hist.axis().centers(), dtype=np.float64),
-        'y':  np.array(hist.values(),         dtype=np.float64),
-        'ex': np.array((hist.axis().edges()[1:] - hist.axis().edges()[:-1])/2,
-                                              dtype=np.float64),
-        'ey': np.array(hist.errors(),         dtype=np.float64)
+        'x':  np.array(hist.axes[0].centers(), dtype=np.float64),
+        'y':  np.array(hist.values(),          dtype=np.float64),
+        'ex': np.array((hist.axes[0].edges()[1:] - hist.axes[0].edges()[:-1])/2,
+                                               dtype=np.float64),
+        'ey': np.array(hist.errors(),          dtype=np.float64)
     })
 
 
@@ -213,8 +213,8 @@ def _get_dataframe_TGraphAsymmErrors_uproot(tgraph):
     Returns:
     pandas.DataFrame: A DataFrame containing the values of the TGraphAsymmErrors.
     """
-    if not uproot.Model.is_instance(tgraph, "TGraphErrors"):
-        raise ValueError(f"{type(tgraph)} is not an uproot TGraphErrors object!")
+    if not uproot.Model.is_instance(tgraph, "TGraphAsymmErrors"):
+        raise ValueError(f"{type(tgraph)} is not an uproot TGraphAsymmErrors object!")
 
     return pd.DataFrame({
         'x':   np.array(tgraph.member("fX"),      dtype=np.float64),

@@ -4,7 +4,7 @@ import uproot
 import numpy as np
 
 
-def _get_dict_th1(hist: TH1):
+def _get_dict_TH1(hist: TH1):
     """
     Takes a ROOT TH1 histogram and returns a dictionary.
     
@@ -38,7 +38,7 @@ def _get_dict_th1(hist: TH1):
         'ey':        errors
     }
 
-def _get_dict_th1_uproot(hist):
+def _get_dict_TH1_uproot(hist):
     if not uproot.Model.is_instance(hist, "TH1"): raise ValueError(f"{type(hist)} is not an uproot TH1 object!")
 
     return {

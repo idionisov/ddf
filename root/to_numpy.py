@@ -9,8 +9,8 @@ from ._._to_numpy._uproot import _get_uproot_th1_as_numpy, _get_uproot_th2_as_nu
 
 
 def get_as_numpy(obj,
-    x_range: Union[tuple, None] = None,
-    y_range: Union[tuple, None] = None
+    x_range = None,
+    y_range = None
 ): 
     if not (isinstance(obj, TObject) or uproot.Model.is_instance(obj, "TObject")):
         raise ValueError("Input must be a ROOT or an uproot TObject instance!")
@@ -30,8 +30,8 @@ def get_as_numpy(obj,
     
 
     elif uproot.Model.is_instance(obj, "TProfile2D"): return _get_uproot_tprofile_2d_as_numpy(obj, x_range)
-    elif uproot.Model.is_instance(obj, "TH2"):        return _get_uproot_th2_as_numpy(obj, x_range)
+    elif uproot.Model.is_instance(obj, "TH2"):        return _get_uproot_th2_as_numpy(obj, x_range, y_range)
     elif uproot.Model.is_instance(obj, "TProfile"):   return _get_uproot_tprofile_1d_as_numpy(obj, x_range)
-    elif uproot.Model.is_instance(obj, "TH1"):        return _get_uproot_th1_as_numpy(obj, x_range)
+    elif uproot.Model.is_instance(obj, "TH1"):        return _get_uproot_th1_as_numpy(obj, x_range, y_range)
     
     else: raise ValueError(f"Type {type(obj)} is cannot be converted to numpy!")

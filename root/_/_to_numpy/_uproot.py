@@ -1,4 +1,5 @@
 from typing import Union
+from collections.abc import Sequence
 import numpy as np
 import uproot
 
@@ -37,8 +38,8 @@ def _get_uproot_th1_as_numpy(hist,
 
 
 def _get_uproot_th2_as_numpy(hist,
-    x_range: Union[tuple, None] = None,
-    y_range: Union[tuple, None] = None
+    x_range = None,
+    y_range = None
 ):
     """
     Takes an uproot TH2 histogram and ranges for both axes.
@@ -57,26 +58,25 @@ def _get_uproot_th2_as_numpy(hist,
     - numpy.array: A 1D array of the y-axis bin edges.
     """
 
-    bin_contents = hist.values()  
-    x_edges = hist.axis(0).edges()
-    y_edges = hist.axis(1).edges()
-    
-    x_min=x_range[0] if x_range is not None else np.min(x_edges)
-    x_max=x_range[1] if x_range is not None else np.max(x_edges)
-    y_min=y_range[0] if y_range is not None else np.min(y_edges)
-    y_max=y_range[1] if y_range is not None else np.max(y_edges)
 
-    x_first_bin = np.searchsorted(x_edges, x_min, side="left")  if x_min is not None else 0
-    x_last_bin = np.searchsorted(x_edges,  x_max, side="right") if x_max is not None else len(x_edges) - 1
+    x_edges = np.array(hist.axis(0).edges(), dtype=np.float64)
+    y_edges = np.array(hist.axis(1).edges(), dtype=np.float64)
+    bin_contents = np.array(hist.values(),   dtype=np.float64)
+
+    x_min, x_max = x_range if x_range is not None else (x_edges[0], x_edges[-1])
+    y_min, y_max = y_range if y_range is not None else (y_edges[0], y_edges[-1])
+
+    ix = np.searchsorted(x_edges, [x_min, x_max])
+    iy = np.searchsorted(y_edges, [y_min, y_max])
     
-    y_first_bin = np.searchsorted(y_edges, y_min, side="left")  if y_min is not None else 0
-    y_last_bin = np.searchsorted(y_edges,  y_max, side="right") if y_max is not None else len(y_edges) - 1
-    
+    x_first_bin, x_last_bin = ix
+    y_first_bin, y_last_bin = iy
+
     data = bin_contents[x_first_bin:x_last_bin, y_first_bin:y_last_bin]
-    x_edges_range = x_edges[x_first_bin:x_last_bin + 1]
-    y_edges_range = y_edges[y_first_bin:y_last_bin + 1]
-    
-    return data.T, x_edges_range, y_edges_range
+    bin_edges_x = x_edges[x_first_bin:x_last_bin + 1]
+    bin_edges_y = y_edges[y_first_bin:y_last_bin + 1]
+
+    return data.T, bin_edges_x, bin_edges_y
 
 
 
@@ -148,6 +148,7 @@ def _get_uproot_tprofile_2d_as_numpy(profile,
     x_max=x_range[1] if x_range is not None else np.max(x_edges)
     y_min=y_range[0] if y_range is not None else np.min(y_edges)
     y_max=y_range[1] if y_range is not None else np.max(y_edges)
+
 
     x_first_bin = np.searchsorted(x_edges, x_min, side="left")  if x_min is not None else 0
     x_last_bin  = np.searchsorted(x_edges, x_max, side="right") if x_max is not None else len(x_edges) - 1
