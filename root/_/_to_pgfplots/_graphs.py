@@ -1,7 +1,7 @@
 from ROOT import TGraph, TGraphErrors, TGraphAsymmErrors
 import numpy as np
 
-def get_TGraph_as_pgfplot(tgraph: TGraph, only_data: bool = False):
+def _get_TGraph_as_pgfplot(tgraph: TGraph, only_data: bool = False):
     n_points = tgraph.GetN()
 
     if not only_data:
@@ -35,7 +35,7 @@ def get_TGraph_as_pgfplot(tgraph: TGraph, only_data: bool = False):
 
 
 
-def get_TGraphErrors_as_pgfplot(tgraph: TGraphErrors, only_data: bool = False):
+def _get_TGraphErrors_as_pgfplot(tgraph: TGraphErrors, only_data: bool = False):
     n_points = tgraph.GetN()
 
     if not only_data:
@@ -80,7 +80,7 @@ def get_TGraphErrors_as_pgfplot(tgraph: TGraphErrors, only_data: bool = False):
     
     return tikz_code
 
-def get_TGraphAsymmErrors_as_pgfplot(tgraph: TGraphAsymmErrors, only_data: bool = False):
+def _get_TGraphAsymmErrors_as_pgfplot(tgraph: TGraphAsymmErrors, only_data: bool = False):
     n_points = tgraph.GetN()
 
     if not only_data:
@@ -128,7 +128,7 @@ def get_TGraphAsymmErrors_as_pgfplot(tgraph: TGraphAsymmErrors, only_data: bool 
     return tikz_code
 
 
-def get_uproot_TGraph_as_pgfplot(graph, only_data: bool = False):
+def _get_uproot_TGraph_as_pgfplot(graph, only_data: bool = False):
     x  = graph.all_members["fX"].astype(np.float64)
     y  = graph.all_members["fY"].astype(np.float64)
     n_points = len(x)
@@ -163,7 +163,7 @@ def get_uproot_TGraph_as_pgfplot(graph, only_data: bool = False):
     return tikz_code
 
 
-def get_uproot_TGraphErrors_as_pgfplot(graph, only_data: bool = False):
+def _get_uproot_TGraphErrors_as_pgfplot(graph, only_data: bool = False):
     x  = graph.all_members["fX"].astype(np.float64)
     y  = graph.all_members["fY"].astype(np.float64)
     ex = graph.all_members["fEX"].astype(np.float64)
@@ -208,7 +208,7 @@ def get_uproot_TGraphErrors_as_pgfplot(graph, only_data: bool = False):
 
 
 
-def get_uproot_TGraphAsymmErrors_as_pgfplot(graph, only_data: bool = False):
+def _get_uproot_TGraphAsymmErrors_as_pgfplot(graph, only_data: bool = False):
     x   = graph.all_members["fX"].astype(np.float64)
     y   = graph.all_members["fY"].astype(np.float64)
     exl = graph.all_members["fEXlow"].astype(np.float64)

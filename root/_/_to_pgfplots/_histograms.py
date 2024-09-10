@@ -2,7 +2,7 @@ from ROOT import TH1, TH2
 import numpy as np
 
 
-def get_TH1_as_pgfplot(h: TH1, only_data: bool = False):
+def _get_TH1_as_pgfplot(h: TH1, only_data: bool = False):
     n_bins = h.GetXaxis().GetNbins()
 
     if not only_data:
@@ -45,7 +45,7 @@ def get_TH1_as_pgfplot(h: TH1, only_data: bool = False):
     return tikz_code
 
 
-def get_TH2_as_pgfplot(h: TH2, only_data: bool = False):
+def _get_TH2_as_pgfplot(h: TH2, only_data: bool = False):
     
     n_bins_x = h.GetXaxis().GetNbins()
     n_bins_y = h.GetYaxis().GetNbins()
@@ -93,7 +93,7 @@ def get_TH2_as_pgfplot(h: TH2, only_data: bool = False):
 
 
 
-def get_uproot_TH1_as_pgfplot(h, only_data: bool = False):
+def _get_uproot_TH1_as_pgfplot(h, only_data: bool = False):
     edges    = np.array(h.axes[0].edges(), dtype=np.float64)
     contents = np.array(h.values(), dtype=np.float64)
     
@@ -131,7 +131,7 @@ def get_uproot_TH1_as_pgfplot(h, only_data: bool = False):
     return tikz_code
 
 
-def get_uproot_TH2_as_pgfplot(h, only_data: bool = False):
+def _get_uproot_TH2_as_pgfplot(h, only_data: bool = False):
     edges    = np.array(h.axes[0].edges(), dtype=np.float64)
     contents = np.array(h.values(), dtype=np.float64)
 
@@ -182,7 +182,7 @@ def get_uproot_TH2_as_pgfplot(h, only_data: bool = False):
     return tikz_code
 
 
-def get_TH1_errors_as_pgfplot(h: TH1):
+def _get_TH1_errors_as_pgfplot(h: TH1):
 
     n_bins = h.GetXaxis().GetNbins()
 

@@ -1,4 +1,5 @@
-from ROOT import TMath, TChain, TVector3
+from ROOT import TMath, TChain, TVector3, sndRecoTrack, ShipMCTrack
+from .trk import get_intersection
 
 PbPb_factors: dict = {
     'EMD': 0.1388888888888889,
@@ -161,3 +162,83 @@ def get_intersection_mc(mc_track, z: float = 490.) -> TVector3:
     y = py_0 + py * t
 
     return TVector3(x, y, z)
+
+
+
+def tracks_match(
+    track:    sndRecoTrack,
+    mc_track: ShipMCTrack,
+    z_ref:    float = 490.
+) -> bool:
+    """
+    Parameters:
+    - track:   (sndRecoTrack): reconstructed track;
+    - mc_track (ShipMCTrack): simulated track;
+    - z_ref    (float): z-coordinate of the reference plane.
+
+    Returns:
+    - bool: Whether the tracks are matched or not.
+    """
+
+    x = {
+        1: get_intersection_mc(mc_track, z_ref).X(),
+        2: get_intersection(track, z_ref).X()
+    }
+    y = {
+        1: get_intersection_mc(mc_track, z_ref).Y(),
+        2: get_intersection(track, z_ref).Y()
+    }
+    
+    track_start = track.getStart()
+    track_stop  = track.getStop()
+    
+    z0 = track_start.Z()
+    x0 = {
+        1: track_start.X(),
+        2: get_intersection_mc(mc_track, z0).X()
+    }
+    y0 = {
+        1: track_start.Y(),
+        2: get_intersection_mc(mc_track, z0).Y()
+    }
+    
+    z1 = track_stop.Z()
+    x1 = {
+        1: track_stop.X(),
+        2: get_intersection_mc(mc_track, z1).X()
+    }
+    y1 = {
+        1: track_stop.Y(),
+        2: get_intersection_mc(mc_track, z1).Y()
+    }
+
+    dX = {
+        'ref':   abs(x[1]  - x[2] ),
+        'start': abs(x0[1] - x0[2]),
+        'end':   abs(x1[1] - x1[2])
+    }
+    dY = {
+        'ref':   abs(y[1]  - y[2] ),
+        'start': abs(y0[1] - y0[2]),
+        'end':   abs(y1[1] - y1[2])
+    }
+
+    dXZ = abs(get_angle_xz(mc_track) - 1e3*track.getAngleXZ())
+    dYZ = abs(get_angle_yz(mc_track) - 1e3*track.getAngleYZ())
+
+    tt = track.getTrackType()
+    if tt==1 or tt==11:
+        if (
+            dX['ref'] <= 1 and dX['start'] <= 0.05 and dX['end'] <= 0.05 and
+            dY['ref'] <= 1 and dY['start'] <= 0.05 and dY['end'] <= 0.05 and
+            dXZ <= 5 and dYZ <= 5
+        ):  return True
+        else: return False    
+    elif tt==3 or tt==13:
+        if (
+            dX['ref'] <= 3 and dX['start'] <= 2 and dX['end'] <= 2 and
+            dY['ref'] <= 3 and dY['start'] <= 2 and dY['end'] <= 2 and
+            dXZ <= 5 and dYZ <= 5
+        ):  return True
+        else: return False
+    else: return False

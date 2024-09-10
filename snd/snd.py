@@ -226,7 +226,7 @@ def init_cbmsim_data(
 
 
 def init_cbmsim_mc_PbPb(
-    mc_factors: dict = {
+    PbPb_factors: dict = {
         'EMD': 0.1388888888888889,
         'NI':  2.003205128205128
     }
@@ -279,11 +279,11 @@ def init_cbmsim_mc_pp():
 
 def get_N(
     track_type:  int,
-    event:       TChain | None = None,
-    sf_hits:     TClonesArray | None = None,
-    sf_clusters: TClonesArray | None = None,
-    mf_hits:     TClonesArray | None = None,
-    mf_clusters: TClonesArray | None = None
+    event:       Union[TChain, None] = None,
+    sf_hits:     Union[TClonesArray, None] = None,
+    sf_clusters: Union[TClonesArray, None] = None,
+    mf_hits:     Union[TClonesArray, None] = None,
+    mf_clusters: Union[TClonesArray, None] = None
 ) -> int:
     '''
     Get the number of Scifi/DS hits/clusters depending on the track type provided.
@@ -314,4 +314,10 @@ def get_N(
             return sum(1 for mf_hit in event.Digi_MuFilterHits if mf_hit.GetSystem() == 3)
         else: raise ValueError("Insufficient input parameters provided.")
     
-    else: raise ValueError("The track type is invalid.")
+    else: raise ValueError(f"Invalid track type: {track_type}.")
+
+
+# def get_dt_events(
+#     current_event: TChain,
+#     previous_event TChain,
+# ):

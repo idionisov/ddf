@@ -2,7 +2,7 @@ from ROOT import TProfile
 import numpy as np
 
 
-def get_TProfile_as_pgfplot(profile: TProfile, only_data: bool = False):
+def _get_TProfile_as_pgfplot(profile: TProfile, only_data: bool = False):
     n_bins = profile.GetXaxis().GetNbins()
 
     if not only_data:
@@ -49,7 +49,7 @@ def get_TProfile_as_pgfplot(profile: TProfile, only_data: bool = False):
     return tikz_code
 
 
-def get_uproot_TProfile_as_pgfplot(profile, only_data: bool = False):
+def _get_uproot_TProfile_as_pgfplot(profile, only_data: bool = False):
     edges = np.array(profile.axes[0].edges(), dtype=np.float64)
     
     bin_centers  = (edges[:-1] + edges[1:])/2
