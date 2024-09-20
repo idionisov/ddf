@@ -180,16 +180,15 @@ def get_teff_dict(
                     h_dict[key][0], h_dict[key][1],
                     stat_option=stat_option, confidence_level=confidence_level, name=name, title=f";{x_axis_title};Efficiency"
                 )
-            else: 
-                raise ValueError("Tuple does not contain histograms!")
+            else: raise ValueError("Tuple does not contain histograms!")
         elif isinstance(h_dict[key], dict):
             dict_of_teff[key] = {}
 
             dict_of_teff[key] = get_teff_dict(h_dict[key],
                 stat_option=stat_option, confidence_level=confidence_level, suffix=suffix, dict_of_teff=dict_of_teff[key]
             )
-        else:
-            raise ValueError("Dictionary values have to be histograms or dictionaries!")
+        elif isinstance(h_dict[key], TH1) or isinstance(h_dict[key], TH2): pass
+        else: raise ValueError("Dictionary values have to be histograms or dictionaries!")
 
     return dict_of_teff
 

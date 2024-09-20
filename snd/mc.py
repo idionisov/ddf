@@ -229,15 +229,15 @@ def tracks_match(
     tt = track.getTrackType()
     if tt==1 or tt==11:
         if (
-            dX['ref'] <= 1 and dX['start'] <= 0.05 and dX['end'] <= 0.05 and
-            dY['ref'] <= 1 and dY['start'] <= 0.05 and dY['end'] <= 0.05 and
+            dX['ref'] <= 0.2 and dX['start'] <= 0.045 and dX['end'] <= 0.045 and
+            dY['ref'] <= 0.2 and dY['start'] <= 0.045 and dY['end'] <= 0.045 and
             dXZ <= 5 and dYZ <= 5
         ):  return True
         else: return False    
     elif tt==3 or tt==13:
         if (
-            dX['ref'] <= 3 and dX['start'] <= 2 and dX['end'] <= 2 and
-            dY['ref'] <= 3 and dY['start'] <= 2 and dY['end'] <= 2 and
+            dX['ref'] <= 1.5 and dX['start'] <= 1.5 and dX['end'] <= 1.5 and
+            dY['ref'] <= 1.5 and dY['start'] <= 1.5 and dY['end'] <= 1.5 and
             dXZ <= 5 and dYZ <= 5
         ):  return True
         else: return False
