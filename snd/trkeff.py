@@ -48,7 +48,7 @@ def is_good_track_of_track_type(
     elif track_type==13:
         if (
             track1.getTrackType() != 11 or
-            not is_good(track1, xz_ang_max=0.022) or
+            not is_good(track1) or
             not is_within_us5_bar(track1, mf_hits, mf) or
             not is_within_ds3(track1) or
             track1.getChi2Ndf() > chi2ndf_max
