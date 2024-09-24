@@ -12,6 +12,18 @@ def get_as_numpy(obj,
     x_range = None,
     y_range = None
 ): 
+    """
+    Converts a ROOT/uproot histogram/profile objects to a numpy array.
+    
+    Parameters:
+    obj: The object to be converted.
+    
+    Returns:
+    - numpy.array: A numpy array containing the values of the histogram/profile within the specified range.
+        - numpy.array: A numpy array containing the errors of the histogram/profile if it is 1D.
+    - numpy.array: Bin edges along the X-axis
+        - numpy.array: Bin edges along the Y-axis if it is 2D
+    """
     if not (isinstance(obj, TObject) or uproot.Model.is_instance(obj, "TObject")):
         raise ValueError("Input must be a ROOT or an uproot TObject instance!")
 
