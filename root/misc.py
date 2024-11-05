@@ -1,10 +1,11 @@
+from typing import Union
 from ROOT import TObject, TH1, TH2, TFile
 from collections.abc import Iterable
 
 
 
 def save_to_root(*objects,
-    tfile:          TFile | str = "",
+    tfile:          Union[TFile, str] = "",
     tdir_path:      str         = "",
     print_filename: bool        = True
 ):

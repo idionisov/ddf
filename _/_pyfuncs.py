@@ -1,3 +1,4 @@
+from typing import Union
 from scipy.stats import beta
 
 def _clopper_pearson_interval(
@@ -28,8 +29,8 @@ def _clopper_pearson_interval(
 
 
 def _bayesian_interval(
-    passed:           float | int,
-    total:            float | int,
+    passed:           Union[float, int],
+    total:            Union[float, int],
     alpha_prior:      float = 1,
     beta_prior:       float = 1,
     confidence_level: float = 0.6826894921370859

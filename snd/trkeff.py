@@ -1,3 +1,4 @@
+from typing import Union
 from ROOT import TChain, TGraph, kBlack, MuFilter, TClonesArray, sndRecoTrack, TMath, TVector3
 from .trk import xy_eff_range, is_good, is_within_veto_bar, is_within_us5_bar, is_within_ds3
 import numpy as np
@@ -98,7 +99,7 @@ def track_comparison_eff(
     histograms: dict,
     event: TChain,
     mufilter: MuFilter,
-    run_or_mcSet: int | str,
+    run_or_mcSet: Union[int, str],
     fill_hists_func:  Callable,
     track_types: list  = [1, 11, 3, 13],
     xy_eff_range: dict = {
@@ -106,7 +107,7 @@ def track_comparison_eff(
         "max": {"x": -10, "y": 50}
     },
     z_ref: float = 490.,
-    weight: int | float = 1
+    weight: Union[int, float] = 1
 ):
     for tt in track_types:
         for trk1 in event.Reco_MuonTracks:
