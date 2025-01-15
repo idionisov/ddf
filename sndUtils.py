@@ -6,7 +6,7 @@ from typing import Union
 from SndlhcGeo import GeoInterface
 from ddfUtils import getSubDirPath, getAllFiles
 from utils.tracks import sys, alg, system, algorithm, att
-from utils.misc import nType, nName, getTChain, getTtFromSys
+from utils.misc import nType, nName, getTChain, getTtFromSys, sfTrackIsReconstructible, dsTrackIsReconstructible, thereIsAMuon
 
 
 class SndData:
@@ -135,12 +135,16 @@ class SndMCData:
         Geofile: Union[str, None] = None
     ):
         self.InputDir = InputDir
-        self.Tree = self.GetTChain(InputDir, Files)
         if Files.endswith(".root"):
             self.Files = Files
         else:
             self.Files = f"{Files}.root"
-        if Geofile: self.Geofile = Geofile
+        self.Tree = self.GetTChain(InputDir, Files)
+        if Geofile:
+            self.Geofile = Geofile
+            self.GeoInterface = GeoInterface(Geofile)
+            self.Scifi = GeoInterface(Geofile).modules["Scifi"]
+            self.Mufi = GeoInterface(Geofile).modules["MuFilter"]
 
     def SetInputDir(self, InputDir: str):
         self.InputDir = InputDir
@@ -171,14 +175,21 @@ class SndMCData:
         return f"{self.InputDir}/{self.Files}"
 
 
+    def InitGeo(self):
+        if not (self.Scifi and self.Mufi):
+            raise ValueError("Geo modules for Scifi and DS are not valid or are not provided!")
+
+        self.Tree.GetEntry(0)
+        self.Scifi.InitEvent(self.Tree.EventHeader)
+        self.Mufi.InitEvent(self.Tree.EventHeader)
+
     def Print(self):
-        print("SND@LHC Dataset:")
-        print(f" > Run:     {self.Run}")
-        print(f" > Fill:    {self.Fill}")
+        print("SND@LHC MC Dataset:")
         print(f" > Input:   {self.GetInput()}")
-        print(f" > Date:    {self.Date.day:02d}/{self.Date.month:02d}/{self.Date.year:04d}")
         print(f" > Entries: {self.Tree.GetEntries():,}")
 
+        if self.GeoInterface:
+            print(f" > Geofile: {self.Geofile}")
 
 
 
@@ -186,7 +197,7 @@ class DdfTrack():
     def __init__(self,
         Track: ROOT.sndRecoTrack,
         Event: Union[ROOT.SNDLHCEventHeader, ROOT.TChain, None] = None,
-        IP1_Angle: float = 20.
+        IP1_Angle: float = 0.02
     ):
         self.sndRecoTrack = Track
         if Event is not None:
@@ -207,6 +218,7 @@ class DdfTrack():
         self.SlopeYZ = Track.getSlopeYZ()
         self.XZ = Track.getAngleXZ()
         self.YZ = Track.getAngleYZ()
+        self.IP1_Angle = IP1_Angle
 
 
     def GetPoints(self) -> ROOT.std.vector:
@@ -214,16 +226,28 @@ class DdfTrack():
 
 
     def IsIP1(self,
-        event: Union[ROOT.SNDLHCEventHeader, None] = None
+        event: Union[ROOT.TChain, ROOT.SNDLHCEventHeader, None] = None
     ) -> Union[bool , None]:
-        if event is None: return None
+        if event is None:
+            if self.Event is not None:
+                if isinstance(self.Event, ROOT.TChain):
+                    eventHeader = self.Event.EventHeader
+                else:
+                    eventHeader = self.Event
+            else:
+                raise ValueError("No Event/EventHeader was provided!")
+        else:
+            if isinstance(event, ROOT.TChain):
+                eventHeader = event.EventHeader
+            else:
+                eventHeader = event
 
         if (
             self.Flag and
             self.Mom.Z() and
-            event.isIP1() and
-            abs(self.XZ*1e3) <= IP1_Angle and
-            abs(self.YZ*1e3) <= IP1_Angle
+            eventHeader.isIP1() and
+            abs(self.XZ) <= self.IP1_Angle and
+            abs(self.YZ) <= self.IP1_Angle
         ):
             return True
         else:
@@ -275,8 +299,8 @@ class DdfTrack():
             return False
 
     def IsWithinDS3(self,
-        xmin: float = 12.770,
-        xmax: float = 4.713,
+        xmin: float = -55.287,
+        xmax: float =  4.713,
         ymin: float = 12.770,
         ymax: float = 72.770
     ) -> bool:
@@ -297,20 +321,22 @@ class DdfTrack():
     ) -> bool:
         if eventOrMfHits is not None:
             if isinstance(eventOrMfHits, ROOT.TClonesArray):
-                mf_hits = eventOrMfHits
+                mfHits = eventOrMfHits
             else:
-                mf_hits = eventOrMfHits.Digi_MuFilterHits
+                mfHits = eventOrMfHits.Digi_MuFilterHits
         else:
             if self.Event:
-                mf_hits = self.Event.Digi_MuFilterHits
+                mfHits = self.Event.Digi_MuFilterHits
             else:
                 raise ValueError("Neither MuFilterHits nor an event was provided!")
 
-        return any(
-            mf_hit.GetSystem()==2 and mf_hit.GetPlane()==4 and self.GetDoca(mf_hit, mufi) <= 3
-            for mf_hit in mf_hits
-        )
-
+        for mfHit in mfHits:
+            if (
+                mfHit.GetSystem()==2 and
+                mfHit.GetPlane()==4 and
+                self.GetDoca(mfHit, mufi)<=3
+            ): return True
+        return False
 
     def IsWithinVetoBar(self,
         mufi: ROOT.MuFilter,
@@ -318,21 +344,22 @@ class DdfTrack():
     ) -> bool:
         if eventOrMfHits is not None:
             if isinstance(eventOrMfHits, ROOT.TClonesArray):
-                mf_hits = eventOrMfHits
+                mfHits = eventOrMfHits
             else:
-                mf_hits = eventOrMfHits.Digi_MuFilterHits
+                mfHits = eventOrMfHits.Digi_MuFilterHits
         else:
             if self.Event:
-                mf_hits = self.Event.Digi_MuFilterHits
+                mfHits = self.Event.Digi_MuFilterHits
             else:
                 raise ValueError("Neither MuFilterHits nor an event was provided!")
         del eventOrMfHits
 
-        for mf_hit in mf_hits:
-            if (mf_hit.GetSystem() != 1): continue
-            if (self.GetDoca(mf_hit, mufi) <= 3):
+        for mfHit in mfHits:
+            if mfHit.GetSystem()==1 and self.GetDoca(mfHit, mufi)<=3:
                 return True
         return False
+
+
 
     def IsGood(self,
         xz_min:      float = -0.08,
@@ -408,7 +435,7 @@ class DdfMCTrack():
     def __init__(self,
         Track: ROOT.ShipMCTrack,
         Event: Union[ROOT.TChain, ROOT.SNDLHCEventHeader, None] = None,
-        IP1_Angle: float = 20.
+        IP1_Angle: float = 0.020
     ):
         self.ShipMCTrack = Track
         if Event is not None:
@@ -442,8 +469,39 @@ class DdfMCTrack():
 
         return ROOT.TVector3(x, y, Z)
 
+    def IsWithinDS3(self,
+        xmin: float = -55.287,
+        xmax: float =  4.713,
+        ymin: float = 12.770,
+        ymax: float = 72.770
+    ) -> bool:
+        ds3 = self.GetPointAtZ(538.366)
+        if (
+            ds3.X() > xmin and
+            ds3.X() < xmax and
+            ds3.Y() > ymin and
+            ds3.Y() < ymax
+        ):
+           return True
+        else:
+           return False
 
-
+    def IsWithinSF1(self,
+        xmin: float = -44.744,
+        xmax: float = -5.744,
+        ymin: float =  15.235,
+        ymax: float =  54.235
+    ) -> bool:
+        sf1 = self.GetPointAtZ(298.942)
+        if (
+            sf1.X() > xmin and
+            sf1.X() < xmax and
+            sf1.Y() > ymin and
+            sf1.Y() < ymax
+        ):
+            return True
+        else:
+            return False
 
     def Print(self):
         print("DDF SND@LHC MCTrack:")

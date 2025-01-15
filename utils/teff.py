@@ -12,7 +12,7 @@ def getTEff(
     cl: float = 0.682689,
     name: str = "",
     title: str = ""
-):
+) -> ROOT.TEfficiency:
     if type(passed) != type(total):
         raise ValueError("Passed and Total Histograms are not of the same type!")
 
@@ -161,3 +161,19 @@ def getGraphFromTEff2D(
     graph.SetTitle(title)
 
     return graph
+
+
+
+def getHistFromTEff2D(teff, name="", title="", suffix="") -> ROOT.TH2D:
+    if teff.GetDimension() != 2:
+        raise ValueError("TEfficiency object is not two-dimensional!")
+
+    if not name:  name  = teff.GetName()
+    if not title: title = teff.GetTitle()
+    if suffix:    name = f"{name}_{suffix}"
+
+    hist = teff.CreateHistogram()
+    hist.SetName(name)
+    hist.SetTitle(title)
+
+    return hist

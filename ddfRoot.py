@@ -2,9 +2,9 @@ from typing import Union, Iterable
 import re
 import ROOT
 import numpy as np
-from utils.th1 import isTH1, isTH2
+from utils.th1 import isTH1, isTH2, getNumpyFromTH2
 from utils.teff import getStatOption, setStatOption, getGraphFromTEff1D, \
-    getGraphFromTEff2D, getTEff
+    getGraphFromTEff2D, getTEff, getHistFromTEff2D
 from utils.misc import getN
 
 
@@ -88,6 +88,8 @@ class DdfEff2D(DdfBaseEff):
         return getGraphFromTEff2D(self.TEfficiency, self.Name, self.Title)
 
 
+    def GetTH2(self) -> ROOT.TH2:
+        return getHistFromTEff2D(self.TEfficiency, self.Name, self.Title)
 
 
 
@@ -130,6 +132,8 @@ class DdfEff:
     def GetGraph(self):
         return self.impl.GetGraph()
 
+    def GetTH2(self) -> ROOT.TH2:
+        return getHistFromTEff2D(self.TEfficiency, self.Name, self.Title)
 
     def Print(self):
         print("DDF Efficiency:")
@@ -188,9 +192,14 @@ def getTEffDict(
                     CL = cl,
                     Name = name,
                     Title = title
-                ).GetGraph()
-                teffs[key].SetMinimum(0)
-                teffs[key].SetMaximum(1.05)
+                )
+                if teffs[key].Dim==1:
+                    teffs[key]=teffs[key].GetGraph()
+                    teffs[key].SetMinimum(0)
+                    teffs[key].SetMaximum(1.05)
+                else:
+                    teffs[key] = getHistFromTEff2D(teffs[key].TEfficiency)
+
             else:
                 teffs[key] = getTEff(
                     passed = passed,
@@ -220,7 +229,7 @@ def getTEffDict(
 
 
 
-def saveToRoot(*objects,
+def _saveToRoot(*objects,
     fout: Union[ROOT.TFile, str],
     directory: str = "",
     print_filename: bool = True
@@ -273,12 +282,12 @@ def saveToRoot(*objects,
 
 
 
-def _saveToRoot(
+def saveToRoot(
     *objects,
     fout: Union[ROOT.TFile, str],
     directory: str = "",
     print_filename: bool = True,
-    nested: bool = False,  # New argument to control directory structure
+    nested: bool = False
 ):
     if isinstance(fout, str):
         fout = ROOT.TFile(fout, "recreate")
@@ -295,7 +304,6 @@ def _saveToRoot(
         elif isinstance(obj, dict):
             for sub_key, sub_obj in obj.items():
                 if not nested:
-                    # Save all objects directly in the current directory
                     recursive_save(sub_obj, current_dir, path)
                 else:
                     sub_key_str = str(sub_key)  # Ensure sub_key is a string

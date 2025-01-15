@@ -70,3 +70,90 @@ def getN(
         else: raise ValueError("Insufficient input parameters provided.")
 
     else: raise ValueError(f"Invalid track type: {tt}.")
+
+
+def thereIsAMuon(
+    mcEvent: ROOT.TChain
+) -> bool:
+    for mcTrack in mcEvent.MCTrack:
+        if abs(mcTrack.GetPdgCode()) == 13:
+            return True
+    return False
+
+
+
+def sfTrackIsReconstructible(
+    mcEvent: ROOT.TChain
+) -> dict:
+    nMCPoints = {
+        'h': {1:0, 2:0, 3:0, 4:0, 5:0},
+        'v': {1:0, 2:0, 3:0, 4:0, 5:0}
+    }
+
+    nScifiPoints = {'h': 0, 'v': 0}
+    nDSPoints    = {'h': 0, 'v': 0}
+
+    for mcPoint in mcEvent.ScifiPoint:
+        if not (
+            abs(mcPoint.PdgCode()) == 13 and
+            mcPoint.GetTrackID() == 0
+        ): continue
+
+        detID = mcPoint.GetDetectorID()
+
+        # Checking for reconstructibility of SciFi tracks
+
+        # Second digit:
+        #   - type of the plane:
+        #       - 0: Horizontal fiber plane
+        #       - 1: Vertical fiber plane
+        if int( (detID/100000)%2 ) == 0:
+            nMCPoints['h'][int(detID/1e+6)]+=1
+        elif int( (detID/100000)%2 ) == 1:
+            nMCPoints['v'][int(detID/1e+6)]+=1
+
+        for sfPlane in range(1, len(nMCPoints['v'])+1):
+            if nMCPoints['v'][sfPlane]>0:
+                nScifiPoints['v']+=1
+
+            if nMCPoints['h'][sfPlane]>0:
+                nScifiPoints['h']+=1
+
+    if (nScifiPoints['h'] >= 3 and nScifiPoints['v'] >= 3):
+        return True
+    else:
+        return False
+
+
+
+def dsTrackIsReconstructible(
+    mcEvent: ROOT.TChain
+) -> dict:
+    nMCPoints = {
+        'h': {1:0, 2:0, 3:0, 4:0},
+        'v': {1:0, 2:0, 3:0, 4:0}
+    }
+    nDSPoints = {'h': 0, 'v': 0}
+
+    for mcPoint in mcEvent.MuFilterPoint:
+        if (
+            abs(mcPoint.PdgCode())==13 and
+            mcPoint.GetTrackID()==0
+        ):
+            detID = mcPoint.GetDetectorID()
+            if detID < 30000: continue
+
+            if detID%1000 > 59:
+                nMCPoints['v'][int(detID/1000) % 10 + 1] += 1
+            else:
+                nMCPoints['h'][int(detID/1000) % 10 + 1] += 1
+
+
+        for dsPlane in range(1, 5):
+            if nMCPoints['v'][dsPlane] > 0: nDSPoints['v'] += 1
+            if nMCPoints['h'][dsPlane] > 0: nDSPoints['h'] += 1
+
+    if (nDSPoints['h'] >= 3 and nDSPoints['v'] >= 3):
+        return True
+    else:
+        return False
