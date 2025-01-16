@@ -140,11 +140,17 @@ class SndMCData:
         else:
             self.Files = f"{Files}.root"
         self.Tree = self.GetTChain(InputDir, Files)
+
         if Geofile:
             self.Geofile = Geofile
             self.GeoInterface = GeoInterface(Geofile)
             self.Scifi = GeoInterface(Geofile).modules["Scifi"]
             self.Mufi = GeoInterface(Geofile).modules["MuFilter"]
+        else:
+            self.Geofile = None
+            self.GeoInterface = None
+            self.Scifi = None
+            self.Mufi = None
 
     def SetInputDir(self, InputDir: str):
         self.InputDir = InputDir
