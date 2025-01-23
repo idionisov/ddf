@@ -33,6 +33,12 @@ class SndData:
             self.GeoInterface = GeoInterface(Geofile)
             self.Scifi = GeoInterface(Geofile).modules["Scifi"]
             self.Mufi = GeoInterface(Geofile).modules["MuFilter"]
+        else:
+            self.Geofile = None
+            self.GeoInterface = None
+            self.Scifi = None
+            self.Mufi = None
+
 
     def SetInputDir(self):
         self.InputDir = getSubDirPath(TopDir=f"run_{self.Run:06d}", RootDir=self.InputDir)
@@ -49,7 +55,7 @@ class SndData:
         elif tfile.Get("rawConv"):
             ttree = tfile.Get("rawConv")
         else:
-            return None
+            raise ValueError("No tree of name cbmsim/rawConv was found!")
 
         try:
             ttree.GetEntry(0)
