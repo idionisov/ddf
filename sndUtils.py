@@ -6,7 +6,7 @@ from typing import Union
 from SndlhcGeo import GeoInterface
 from ddfUtils import getSubDirPath, getAllFiles
 from utils.tracks import sys, alg, system, algorithm, att
-from utils.misc import nType, nName, getTChain, getTtFromSys, sfTrackIsReconstructible, dsTrackIsReconstructible, thereIsAMuon
+from utils.misc import nType, nName, getTChain, getTtFromSys, sfTrackIsReconstructible, dsTrackIsReconstructible, thereIsAMuon, getN
 
 
 class SndData:

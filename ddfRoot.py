@@ -2,9 +2,11 @@ from typing import Union, Iterable
 import re
 import ROOT
 import numpy as np
-from utils.th1 import isTH1, isTH2, getNumpyFromTH2
+from utils.th1 import isTH1, isTH2, getNumpyFromTH2, getPandasFromUprootTH1
 from utils.teff import getStatOption, setStatOption, getGraphFromTEff1D, \
     getGraphFromTEff2D, getTEff, getHistFromTEff2D
+from utils.tgraph import getPandasFromTGraph, getPandasFromTGraph2D, \
+    getPandasFromTGraphErrors, getPandasFromTGraphAsymmErrors
 from utils.misc import getN
 
 
