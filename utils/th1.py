@@ -88,6 +88,51 @@ def getNumpyFromTH2(
     return hArr, hArrErrLow, hArrErrUp, xBinEdges, yBinEdges
 
 
+def getNumpyFromUprootTH2(hist,
+    xmin: Union[float, None] = None,
+    xmax: Union[float, None] = None,
+    ymin: Union[float, None] = None,
+    ymax: Union[float, None] = None
+) -> tuple:
+    """
+    Takes an uproot TH2 histogram and optional axis ranges.
+    Returns a numpy array of the bin contents within selected ranges and arrays of bin edges.
+
+    Parameters:
+    - hist (uproot.behaviors.TH2.TH2): The uproot 2D histogram.
+    - xmin (float, optional): Minimum x-axis value.
+    - xmax (float, optional): Maximum x-axis value.
+    - ymin (float, optional): Minimum y-axis value.
+    - ymax (float, optional): Maximum y-axis value.
+
+    Returns:
+    - numpy.array: A 2D array of the bin contents.
+    - numpy.array: A 1D array of the x-axis bin edges.
+    - numpy.array: A 1D array of the y-axis bin edges.
+    """
+
+    # Get the bin edges (CALL the edges method, do not access as an attribute)
+    x_edges = np.array(hist.axis(0).edges(), dtype=np.float64)
+    y_edges = np.array(hist.axis(1).edges(), dtype=np.float64)
+    bin_contents = np.array(hist.values(), dtype=np.float64)
+
+    # Find the range indices, ensuring None values don't break the function
+    x_first_bin = 0 if xmin is None else np.searchsorted(x_edges, xmin, side='left')
+    x_last_bin = len(x_edges) - 1 if xmax is None else np.searchsorted(x_edges, xmax, side='right')
+
+    y_first_bin = 0 if ymin is None else np.searchsorted(y_edges, ymin, side='left')
+    y_last_bin = len(y_edges) - 1 if ymax is None else np.searchsorted(y_edges, ymax, side='right')
+
+    # Slice the bin contents based on computed indices
+    data = bin_contents[x_first_bin:x_last_bin, y_first_bin:y_last_bin]
+    bin_edges_x = x_edges[x_first_bin:x_last_bin + 1]
+    bin_edges_y = y_edges[y_first_bin:y_last_bin + 1]
+
+    return data.T, bin_edges_x, bin_edges_y
+
+
+
+
 def getPandasFromTH1(hist: TH1):
     """
     Converts a PyROOT TH1 or TProfile object to a pandas DataFrame.

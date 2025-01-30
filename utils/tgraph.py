@@ -110,3 +110,28 @@ def getPandasFromTGraph2D(tgraph: ROOT.TGraph2D):
         z[i] = tgraph.GetPointZ(i)
 
     return pd.DataFrame({'x': x, 'y': y, 'z': z})
+
+
+
+
+def getPandasFromUprootTGraphAsymmErrors(tgraph):
+    """
+    Converts an uproot TGraphAsymmErrors to a pandas DataFrame.
+
+    Parameters:
+    TGraph: The uproot TGraphAsymmErrors object to be converted.
+
+    Returns:
+    pandas.DataFrame: A DataFrame containing the values of the TGraphAsymmErrors.
+    """
+    if not uproot.Model.is_instance(tgraph, "TGraphAsymmErrors"):
+        raise ValueError(f"{type(tgraph)} is not an uproot TGraphAsymmErrors object!")
+
+    return pd.DataFrame({
+        'x':   np.array(tgraph.member("fX"),      dtype=np.float64),
+        'y':   np.array(tgraph.member("fY"),      dtype=np.float64),
+        'exl': np.array(tgraph.member("fEXlow"),  dtype=np.float64),
+        'exh': np.array(tgraph.member("fEXhigh"), dtype=np.float64),
+        'eyl': np.array(tgraph.member("fEYlow"),  dtype=np.float64),
+        'eyh': np.array(tgraph.member("fEYhigh"), dtype=np.float64)
+    })
