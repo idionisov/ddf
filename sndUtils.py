@@ -7,6 +7,7 @@ from SndlhcGeo import GeoInterface
 from ddfUtils import getSubDirPath, getAllFiles
 from utils.tracks import sys, alg, system, algorithm, att
 from utils.misc import nType, nName, getTChain, getTtFromSys, sfTrackIsReconstructible, dsTrackIsReconstructible, thereIsAMuon, getN
+from utils.misc import getN
 
 
 class SndData:

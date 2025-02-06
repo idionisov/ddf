@@ -1,4 +1,5 @@
 import os, glob
+import numpy as np
 from time import time
 from typing import Union
 from scipy.stats import beta, norm
@@ -214,3 +215,9 @@ def getEffWithError(
         raise ValueError(f"Invalid statistic option '{statOption}'! Allowed options are: {', '.join(allowed_options)}")
 
     return eff, deff_up, deff_low
+
+
+
+def getArrayCenters(array, round: int = 2):
+    array = np.array(array, dtype=np.float64)
+    return np.round(0.5 * (array[:-1] + array[1:]), round)

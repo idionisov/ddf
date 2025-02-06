@@ -1,8 +1,12 @@
 import ROOT
 import re
 import numpy as np
+import uproot
+import pandas as pd
 from typing import Union
-from .th1 import isTH1, isTH2
+from utils.th1 import isTH1, isTH2
+from utils.tgraph import getPandasFromTGraphAsymmErrors
+from ddfUtils import getEffWithError
 
 
 def getTEff(
@@ -18,7 +22,7 @@ def getTEff(
 
     teff = ROOT.TEfficiency(passed, total)
     teff.SetConfidenceLevel(cl)
-    SetStatOption(teff, statOption)
+    setStatOption(teff, statOption)
     if name: teff.SetName(name)
     if title: teff.SetTitle(title)
 
@@ -163,6 +167,19 @@ def getGraphFromTEff2D(
     return graph
 
 
+def getGraphFromTEff(
+    teff: ROOT.TEfficiency,
+    name: str = "",
+    title: str = "",
+    suffix: str = ""
+):
+    if teff.GetDimension() == 1:
+        return (teff, name, title, suffix)
+    elif teff.GetDimension() == 2:
+        return getGraphFromTEff2D(teff, name, title, suffix)
+    else:
+        raise ValueError("TEfficiency object cannot be of dimension higher 2!")
+
 
 def getHistFromTEff2D(teff, name="", title="", suffix="") -> ROOT.TH2D:
     if teff.GetDimension() != 2:
@@ -177,3 +194,147 @@ def getHistFromTEff2D(teff, name="", title="", suffix="") -> ROOT.TH2D:
     hist.SetTitle(title)
 
     return hist
+
+
+
+def getNumpyFromTEff1D(
+    efficiency: ROOT.TEfficiency,
+    xmin: Union[float, None] = None,
+    xmax: Union[float, None] = None
+):
+    if efficiency.GetDimension() != 1:
+        raise ValueError("TEfficiency is not 1 dimensional!")
+
+    if xmin:
+        xFirstBin = efficiency.GetPassedHistogram().FindBin(xmin)
+    else:
+        xFirstBin = 1
+
+    if xmax:
+        xLastBin = efficiency.GetPassedHistogram().FindBin(xmax)
+    else:
+        xLastBin = efficiency.GetPassedHistogram().GetNbinsX() + 1
+
+    nBins      = xLastBin - xFirstBin
+    effs       = np.zeros(nBins)
+    errorsUp   = np.zeros(nBins)
+    errorsDown = np.zeros(nBins)
+    binEdges   = np.zeros(nBins + 1)
+
+    for ix, xbin in enumerate(range(xFirstBin, xLastBin)):
+        gbin = efficiency.GetGlobalBin(xbin)
+
+        effs[ix]       = efficiency.GetEfficiency(gbin)
+        errorsUp[ix]   = efficiency.GetEfficiencyErrorUp(gbin)
+        errorsDown[ix] = efficiency.GetEfficiencyErrorLow(gbin)
+        binEdges[ix]   = efficiency.GetPassedHistogram().GetBinLowEdge(xbin)
+    binEdges[-1] = efficiency.GetPassedHistogram().GetBinLowEdge(xLastBin)
+
+    return effs, errorsUp, errorsDown, binEdges
+
+
+
+
+def getNumpyFromTEff2D(
+    efficiency: ROOT.TEfficiency,
+    xmin: Union[float, None] = None,
+    xmax: Union[float, None] = None,
+    ymin: Union[float, None] = None,
+    ymax: Union[float, None] = None
+):
+    if efficiency.GetDimension() != 2:
+        raise ValueError("TEfficiency is not 2 dimensional!")
+
+    if xmin:
+        xFirstBin = efficiency.GetPassedHistogram().GetXaxis().FindBin(xmin)
+    else:
+        xFirstBin = 1
+
+    if xmax:
+        xLastBin = efficiency.GetPassedHistogram().GetXaxis().FindBin(xmax)
+    else:
+        xLastBin = efficiency.GetPassedHistogram().GetXaxis().GetNbins() + 1
+
+
+    if ymin:
+        yFirstBin = efficiency.GetPassedHistogram().GetYaxis().FindBin(ymin)
+    else:
+        yFirstBin = 1
+
+    if ymax:
+        yLastBin = efficiency.GetPassedHistogram().GetYaxis().FindBin(ymax)
+    else:
+        yLastBin = efficiency.GetPassedHistogram().GetYaxis().GetNbins() + 1
+
+
+    nBinsX = xLastBin - xFirstBin
+    nBinsY = yLastBin - yFirstBin
+    effs = np.zeros((nBinsX, nBinsY))
+    errorsUp = np.zeros((nBinsX, nBinsY))
+    errorsDown = np.zeros((nBinsX, nBinsY))
+    xBinEdges = np.zeros(nBinsX + 1)
+    yBinEdges = np.zeros(nBinsY + 1)
+
+
+    for ix in range(nBinsX):
+        xBinEdges[ix] = efficiency.GetPassedHistogram().GetXaxis().GetBinLowEdge(xFirstBin + ix)
+    xBinEdges[-1] = efficiency.GetPassedHistogram().GetXaxis().GetBinUpEdge(xLastBin - 1)
+
+
+    for iy in range(nBinsY):
+        yBinEdges[iy] = efficiency.GetPassedHistogram().GetYaxis().GetBinLowEdge(yFirstBin + iy)
+    yBinEdges[-1] = efficiency.GetPassedHistogram().GetYaxis().GetBinUpEdge(yLastBin - 1)
+
+
+    for ix in range(nBinsX):
+        for iy in range(nBinsY):
+            gbin = efficiency.GetGlobalBin(xFirstBin + ix, yFirstBin + iy)
+            effs[ix, nBinsY-iy-1] = efficiency.GetEfficiency(gbin)
+            errorsUp[ix, nBinsY-iy-1] = efficiency.GetEfficiencyErrorUp(gbin)
+            errorsDown[ix, nBinsY-iy-1] = efficiency.GetEfficiencyErrorLow(gbin)
+
+    return effs.T, errorsUp.T, errorsDown.T, xBinEdges, yBinEdges
+
+
+def getPandasFromTEff1D(teff,
+    statOption: str = "Clopper Pearson",
+    cl: float = 0.6826894921370859
+):
+    if not isinstance(teff, ROOT.TEfficiency) and not uproot.Model.is_instance(teff, "TEfficiency"):
+        raise ValueError("Provided object is not a ROOT.TEfficiency or an uproot.TEfficiency instance!")
+
+    if isinstance(teff, ROOT.TEfficiency):
+        if teff.GetDimension() != 1:
+            raise ValueError("Efficiency is not one-dimensional!")
+
+        name = teff.GetName()
+        title = teff.GetTitle()
+        xAxisTitle = teff.GetPassedHistogram().GetXaxis().GetTitle()
+        yAxisTitle = teff.GetPassedHistogram().GetXaxis().GetTitle()
+
+        teff = getGraphFromTEff1D(teff,
+            name = name,
+            title = f"{title};{xAxisTitle};{yAxisTitle}"
+        )
+        return getPandasFromTGraphAsymmErrors(teff)
+
+    else:
+        print("Converting an uproot TEfficiency to a pandas dataframe!")
+        print(">> Discrepancies between original an selected statistic options or confidence levels might lead to unexpected results!")
+        print(f">> Statistic option: \033[1;32m{statOption}\033[0m")
+        print(f">> Confidence level: \033[1;32m{cl:.03f}\033[0m")
+
+        passed = teff.member("fPassedHistogram").values()
+        total  = teff.member("fTotalHistogram").values()
+        x  = teff.member("fPassedHistogram").member("fXaxis").centers()
+        ex = teff.member("fPassedHistogram").member("fXaxis").widths() / 2
+
+        y   = np.zeros(len(passed), dtype=np.float64)
+        eyh = np.zeros(len(passed), dtype=np.float64)
+        eyl = np.zeros(len(passed), dtype=np.float64)
+        for i in range(len(passed)):
+            y[i], eyh[i], eyl[i] = getEffWithError(passed[i], total[i], statOption=statOption, cl=cl)
+
+        return pd.DataFrame({
+            'x': x, 'y': y, 'exl': ex, 'exh': ex, 'eyl': eyl, 'eyh': eyh
+        })

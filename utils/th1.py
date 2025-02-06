@@ -1,181 +1,300 @@
 from typing import Union
-from ROOT import TH1, TH2, TH3
+import ROOT
 import numpy as np
 import pandas as pd
 import uproot
+from ddfUtils import getArrayCenters
 
-def isTH1(obj):
-    if isinstance(obj, TH1) and not isinstance(obj, (TH2, TH3)):
-        return True
-    else:
+
+def getTestHists1D(
+    nBins: int   = 10,
+    xlow:  float = 0.,
+    xhigh: float = 10.
+):
+    """
+    Create test 1D histograms for passed and total events.
+    """
+
+    h_total  = ROOT.TH1F('h_total', 'Total Histogram', nBins, xlow, xhigh)
+    h_passed = ROOT.TH1F('h_passed', 'Passed Histogram', nBins, xlow, xhigh)
+
+    for i in range(1, nBins + 1):
+        h_total.SetBinContent(i, 10)
+        h_passed.SetBinContent(i, np.random.randint(0, 10))
+
+    return h_passed, h_total
+
+
+
+def getTestHists2D(
+    nBinsX: int   = 10,
+    xlow:   float = 0.,
+    xhigh:  float = 10.,
+    nBinsY: int   = 10,
+    ylow:   float = 0.,
+    yhigh:  float = 10.
+):
+    """
+    Create test 2D histograms for passed and total events.
+    """
+
+    h_total  = ROOT.TH2F('h_total',  'Total Histogram',  nBinsX, xlow, xhigh, nBinsY, ylow, yhigh)
+    h_passed = ROOT.TH2F('h_passed', 'Passed Histogram', nBinsX, xlow, xhigh, nBinsY, ylow, yhigh)
+
+    for xbin in range(1, nBinsX + 1):
+        for ybin in range(1, nBinsY + 1):
+            h_total.SetBinContent(xbin, ybin, 10)
+            h_passed.SetBinContent(xbin, ybin, np.random.randint(0, 10))
+
+    return h_passed, h_total
+
+
+def getTestTProfile(
+    nBins: int = 10,
+    xmin: float = 0.,
+    xmax: float = 10.
+):
+    profile = ROOT.TProfile("pr_test", "Example TProfile", nBins, xmin, xmax)
+
+    rng = np.random.default_rng(seed=42)
+    for _ in range(1000):
+        x = rng.uniform(xmin, xmax)
+        y = np.sin(x) + rng.normal(0, 0.2)
+        profile.Fill(x, y)
+    return profile
+
+
+def getTestTProfile2D(
+    nBinsX: int = 30,
+    xmin:   float = 0.,
+    xmax:   float = 10.,
+    nBinsY: int = 30,
+    ymin:   float = 0.,
+    ymax:   float = 10.
+):
+    pr = ROOT.TProfile2D("pr", "Example TProfile2D", nBinsX, xmin, xmax, nBinsY, ymin, ymax)
+
+    rng = np.random.default_rng(seed=42)
+    for _ in range(5000):
+        x = rng.uniform(xmin, xmax)
+        y = rng.uniform(ymin, ymax)
+        z = np.sin(x) * np.cos(y) + rng.normal(0, 0.1)
+        pr.Fill(x, y, z)
+    return pr
+
+
+def isTH1(obj, option: str = "") -> bool:
+    def isRootTH1(obj) -> bool:
+        if isinstance(obj, ROOT.TH1) and not isinstance(obj, (ROOT.TH2, ROOT.TH3, ROOT.TProfile, ROOT.TProfile2D, ROOT.TProfile3D)):
+            return True
+        return False
+
+    def isUprootTH1(obj) -> bool:
+        if hasattr(obj, "classname"):
+            if (
+                uproot.Model.is_instance(obj, "TH1") and
+                not uproot.Model.is_instance(obj, "TH2") and
+                not uproot.Model.is_instance(obj, "TH3") and
+                not uproot.Model.is_instance(obj, "TProfile") and
+                not uproot.Model.is_instance(obj, "TProfile2D") and
+                not uproot.Model.is_instance(obj, "TProfile3D")
+            ):
+                return True
         return False
 
 
-def isTH2(obj):
-    if isinstance(obj, TH2) and not isinstance(obj, TH3):
-        return True
+    if option.lower() == "uproot":
+        return isUprootTH1(obj)
+    elif option.lower() in ("all", "both"):
+        return isRootTH1(obj) or isUprootTH1(obj)
     else:
+        return isRootTH1(obj)
+
+
+def isTProfile(obj, option: str = "") -> bool:
+    def isRootTProfile(obj) -> bool:
+        if isinstance(obj, ROOT.TProfile) and not isinstance(obj, (ROOT.TProfile2D, ROOT.TProfile3D)):
+            return True
+        return False
+
+    def isUprootTProfile(obj) -> bool:
+        if hasattr(obj, "classname"):
+            if (
+                uproot.Model.is_instance(obj, "TProfile") and
+                not uproot.Model.is_instance(obj, "TProfile2D") and
+                not uproot.Model.is_instance(obj, "TProfile3D")
+            ):
+                return True
         return False
 
 
-def getNumpyFromTH2(
-    hist: TH2,
-    xmin: Union[float, None] = None,
-    xmax: Union[float, None] = None,
-    ymin: Union[float, None] = None,
-    ymax: Union[float, None] = None
+    if option.lower() == "uproot":
+        return isUprootTProfile(obj)
+    elif option.lower() in ("all", "both"):
+        return isRootTProfile(obj) or isUprootTProfile(obj)
+    else:
+        return isRootTProfile(obj)
+
+
+
+def isTH2(obj, option: str = "") -> bool:
+    def isRootTH2(obj) -> bool:
+        if isinstance(obj, ROOT.TH2) and not isinstance(obj, (ROOT.TH3, ROOT.TProfile2D, ROOT.TProfile3D)):
+            return True
+        return False
+
+    def isUprootTH2(obj) -> bool:
+        if hasattr(obj, "classname"):
+            if (
+                uproot.Model.is_instance(obj, "TH2") and
+                not uproot.Model.is_instance(obj, "TH3") and
+                not uproot.Model.is_instance(obj, "TProfile")
+            ):
+                return True
+        return False
+
+    if option.lower() == "uproot":
+        return isUprootTH2(obj)
+    elif option.lower() in ("all", "both"):
+        return isRootTH2(obj) or isUprootTH2(obj)
+    else:
+        return isRootTH2(obj)
+
+
+def isTProfile2D(obj, option: str = "") -> bool:
+    def isRootTProfile2D(obj) -> bool:
+        if isinstance(obj, ROOT.TProfile2D):
+            return True
+        return False
+
+    def isUprootTProfile2D(obj) -> bool:
+        if hasattr(obj, "classname"):
+            if uproot.Model.is_instance(obj, "TProfile2D"):
+                return True
+        return False
+
+
+    if option.lower() == "uproot":
+        return isUprootTProfile2D(obj)
+    elif option.lower() in ("all", "both"):
+        return isRootTProfile2D(obj) or isUprootTProfile2D(obj)
+    else:
+        return isRootTProfile2D(obj)
+
+
+def getNumpyFromTH1(obj,
+    xmin: Union[float, int, None] = None,
+    xmax: Union[float, int, None] = None
+):
+    if isTH1(obj) or isTProfile(obj):
+        obj = uproot.from_pyroot(obj)
+
+    else:
+        if not isTH1(obj, option="uproot") and not isTProfile(obj, option="uproot"):
+            raise ValueError("Object is not a ROOT.TH1, uproot.TH1, ROOT.TProfile or uproot.TProfile instance!")
+
+    data, binEdges = obj.to_numpy()
+    errors = obj.errors()
+
+    if xmin is not None:
+        lowerIndex = np.searchsorted(binEdges, xmin, side="left")
+
+        if binEdges[lowerIndex] < xmin:
+            lowerIndex += 1
+    else:
+        lowerIndex = 0
+
+    if xmax is not None:
+        upperIndex = np.searchsorted(binEdges, xmax, side="right")
+
+        if binEdges[upperIndex] > xmax:
+            upperIndex -= 1
+    else:
+        upperIndex = len(binEdges)
+
+    data = data[lowerIndex:upperIndex].astype(np.float64)
+    errors = errors[lowerIndex:upperIndex].astype(np.float64)
+    binEdges = binEdges[lowerIndex:upperIndex + 1].astype(np.float64)
+
+    return data, errors, binEdges
+
+def getNumpyFromTH2(obj,
+    xmin: Union[float, int, None] = None,
+    xmax: Union[float, int, None] = None,
+    ymin: Union[float, int, None] = None,
+    ymax: Union[float, int, None] = None
 ) -> tuple:
-    xBinEdges = []
-    yBinEdges = []
-
-    filteredBins = []
-    filteredBinsErrLow = []
-    filteredBinsErrUp = []
-
-
-    for yBin in range(1, hist.GetYaxis().GetNbins() + 1):
-        yLow = hist.GetYaxis().GetBinLowEdge(yBin)
-        yUp  = hist.GetYaxis().GetBinUpEdge(yBin)
-
-        if (ymin is not None and yLow < ymin) or (ymax is not None and yUp > ymax):
-            continue
-
-        if yBinEdges == []:
-            yBinEdges.append(yLow)
-        yBinEdges.append(yUp)
+    if isTH2(obj) or isTProfile2D(obj):
+        obj = uproot.from_pyroot(obj)
+    else:
+        if not isTH2(obj, option="uproot") and not isTProfile2D(obj, option="uproot"):
+            raise ValueError("Provided object is not a ROOT.TH2, uproot.TH2, ROOT.TProfile2D or an uproot.TProfile2D instance!")
 
 
-    for xBin in range(1, hist.GetXaxis().GetNbins() + 1):
-        xLow = hist.GetXaxis().GetBinLowEdge(xBin)
-        xUp  = hist.GetXaxis().GetBinUpEdge(xBin)
+    data = obj.values()
+    errors = obj.errors()
+    xBinEdges = obj.member("fXaxis").edges()
+    yBinEdges = obj.member("fYaxis").edges()
 
-        if (xmin is not None and xLow < xmin) or (xmax is not None and xUp > xmax):
-            continue
+    if xmin is not None:
+        xLowerIndex = np.searchsorted(xBinEdges, xmin, side="left")
 
-        if xBinEdges == []:
-            xBinEdges.append(xLow)
-        xBinEdges.append(xUp)
+        if xBinEdges[xLowerIndex] < xmin:
+            xLowerIndex += 1
+    else:
+        xLowerIndex = 0
 
-        yRow = []
-        yRowErrLow = []
-        yRowErrUp = []
+    if xmax is not None:
+        xUpperIndex = np.searchsorted(xBinEdges, xmax, side="right")
 
-        for yBin in range(1, hist.GetYaxis().GetNbins() + 1):
-            yLow = hist.GetYaxis().GetBinLowEdge(yBin)
-            yUp  = hist.GetYaxis().GetBinUpEdge(yBin)
-
-            if (ymin is not None and yLow < ymin) or (ymax is not None and yUp > ymax):
-                continue
-
-
-            yRow.insert(0, hist.GetBinContent(xBin, yBin))
-            yRowErrLow.insert(0, hist.GetBinErrorLow(xBin, yBin))
-            yRowErrUp.insert(0, hist.GetBinErrorUp(xBin, yBin))
-
-        if yRow:
-            filteredBins.append(yRow)
-            filteredBinsErrLow.append(yRowErrLow)
-            filteredBinsErrUp.append(yRowErrUp)
+        if xBinEdges[xUpperIndex] > xmax:
+            xUpperIndex -= 1
+    else:
+        xUpperIndex = len(xBinEdges)
 
 
+    if ymin is not None:
+        yLowerIndex = np.searchsorted(yBinEdges, ymin, side="left")
 
-    xBinEdges = np.array(xBinEdges, dtype=np.float64)
-    yBinEdges = np.array(yBinEdges, dtype=np.float64)
-    hArr = np.array(filteredBins, dtype=np.float64).T
-    hArrErrLow = np.array(filteredBinsErrLow, dtype=np.float64).T
-    hArrErrUp = np.array(filteredBinsErrUp, dtype=np.float64).T
+        if yBinEdges[yLowerIndex] < ymin:
+            yLowerIndex += 1
+    else:
+        yLowerIndex = 0
 
-    return hArr, hArrErrLow, hArrErrUp, xBinEdges, yBinEdges
+    if ymax is not None:
+        yUpperIndex = np.searchsorted(yBinEdges, ymax, side="right")
+
+        if yBinEdges[yUpperIndex] > ymax:
+            yUpperIndex -= 1
+    else:
+        yUpperIndex = len(yBinEdges)
 
 
-def getNumpyFromUprootTH2(hist,
-    xmin: Union[float, None] = None,
-    xmax: Union[float, None] = None,
-    ymin: Union[float, None] = None,
-    ymax: Union[float, None] = None
-) -> tuple:
-    """
-    Takes an uproot TH2 histogram and optional axis ranges.
-    Returns a numpy array of the bin contents within selected ranges and arrays of bin edges.
+    data = data[xLowerIndex:xUpperIndex, yLowerIndex:yUpperIndex].astype(np.float64)
+    errors = errors[xLowerIndex:xUpperIndex, yLowerIndex:yUpperIndex].astype(np.float64)
+    xBinEdges = xBinEdges[xLowerIndex:xUpperIndex + 1].astype(np.float64)
+    yBinEdges = yBinEdges[yLowerIndex:yUpperIndex + 1].astype(np.float64)
 
-    Parameters:
-    - hist (uproot.behaviors.TH2.TH2): The uproot 2D histogram.
-    - xmin (float, optional): Minimum x-axis value.
-    - xmax (float, optional): Maximum x-axis value.
-    - ymin (float, optional): Minimum y-axis value.
-    - ymax (float, optional): Maximum y-axis value.
-
-    Returns:
-    - numpy.array: A 2D array of the bin contents.
-    - numpy.array: A 1D array of the x-axis bin edges.
-    - numpy.array: A 1D array of the y-axis bin edges.
-    """
-
-    # Get the bin edges (CALL the edges method, do not access as an attribute)
-    x_edges = np.array(hist.axis(0).edges(), dtype=np.float64)
-    y_edges = np.array(hist.axis(1).edges(), dtype=np.float64)
-    bin_contents = np.array(hist.values(), dtype=np.float64)
-
-    # Find the range indices, ensuring None values don't break the function
-    x_first_bin = 0 if xmin is None else np.searchsorted(x_edges, xmin, side='left')
-    x_last_bin = len(x_edges) - 1 if xmax is None else np.searchsorted(x_edges, xmax, side='right')
-
-    y_first_bin = 0 if ymin is None else np.searchsorted(y_edges, ymin, side='left')
-    y_last_bin = len(y_edges) - 1 if ymax is None else np.searchsorted(y_edges, ymax, side='right')
-
-    # Slice the bin contents based on computed indices
-    data = bin_contents[x_first_bin:x_last_bin, y_first_bin:y_last_bin]
-    bin_edges_x = x_edges[x_first_bin:x_last_bin + 1]
-    bin_edges_y = y_edges[y_first_bin:y_last_bin + 1]
-
-    return data.T, bin_edges_x, bin_edges_y
+    return data.T, errors.T, xBinEdges, yBinEdges
 
 
 
 
-def getPandasFromTH1(hist: TH1):
-    """
-    Converts a PyROOT TH1 or TProfile object to a pandas DataFrame.
+def getPandasFromTH1(obj):
+    if not isTH1(obj, option="all") and not isTProfile(obj, option="all"):
+        raise ValueError(f"Provided object is not a ROOT.TH1, uproot.TH1, ROOT.TProfile or uproot.TProfile instance!")
 
-    Parameters:
-    hist: The PyROOT TH1 or TProfile object to be converted.
+    if isTH1(obj) or isTProfile(obj):
+        obj = uproot.from_pyroot(obj)
 
-    Returns:
-    pandas.DataFrame: A DataFrame containing the values of the TH1.
-    """
-    if not isinstance(hist, (ROOT.TH1, ROOT.TProfile)):
-        raise ValueError(f"{type(hist)} is not a PyROOT TH1 or TProfile object!")
-
-    x = np.array([hist.GetBinCenter(i) for i in range(1, hist.GetNbinsX() + 1)], dtype=np.float64)
-    y = np.array([hist.GetBinContent(i) for i in range(1, hist.GetNbinsX() + 1)], dtype=np.float64)
-    ex = np.array([hist.GetBinWidth(i) / 2 for i in range(1, hist.GetNbinsX() + 1)], dtype=np.float64)
-    ey = np.array([hist.GetBinError(i) for i in range(1, hist.GetNbinsX() + 1)], dtype=np.float64)
+    y  = obj.values()
+    ey = obj.errors()
+    x  = obj.all_members['fXaxis'].centers()
+    ex = obj.all_members['fXaxis'].widths()
 
     return pd.DataFrame({
-        'x': x,
-        'y': y,
+        'x':  x,
+        'y':  y,
         'ex': ex,
         'ey': ey
-    })
-
-
-def getPandasFromUprootTH1(hist):
-    """
-    Converts an uproot TH1 or TProfile object to a pandas DataFrame.
-
-    Parameters:
-    hist: The uproot TH1 or TProfile object to be converted.
-
-    Returns:
-    pandas.DataFrame: A DataFrame containing the values of the TH1F.
-    """
-    if not uproot.Model.is_instance(hist, "TH1"):
-        raise ValueError(f"{type(hist)} is not an uproot TH1 object!")
-
-    return pd.DataFrame({
-        'x':  np.array(hist.axes[0].centers(), dtype=np.float64),
-        'y':  np.array(hist.values(),          dtype=np.float64),
-        'ex': np.array((hist.axes[0].edges()[1:] - hist.axes[0].edges()[:-1])/2,
-                                               dtype=np.float64),
-        'ey': np.array(hist.errors(),          dtype=np.float64)
     })

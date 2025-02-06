@@ -1,16 +1,18 @@
 from typing import Union, Iterable
 import re
 import ROOT
+import uproot
 import numpy as np
-from utils.th1 import isTH1, isTH2, getNumpyFromTH2, getNumpyFromUprootTH2, \
-    getPandasFromUprootTH1
-from utils.teff import getStatOption, setStatOption, getGraphFromTEff1D, \
-    getGraphFromTEff2D, getTEff, getHistFromTEff2D
-from utils.tgraph import getPandasFromTGraph, getPandasFromTGraph2D, \
-    getPandasFromTGraphErrors, getPandasFromTGraphAsymmErrors, \
-    getPandasFromUprootTGraphAsymmErrors
-from utils.misc import getN
+from utils.th1 import isTH1, isTH2, isTProfile, isTProfile2D, \
+    getTestHists1D, getTestHists2D, getTestTProfile, getTestTProfile2D
+from utils.teff import getStatOption, setStatOption, getGraphFromTEff, getTEff, getHistFromTEff2D
+from utils.tgraph import getTestTGraph, getTestTGraphErrors, \
+    getTestTGraphAsymmErrors, getTestTGraph2D, isTGraph, \
+    isTGraphErrors, isTGraphAsymmErrors, isTGraph2D
 
+from utils.toNumpy import getAsNumpy
+from utils.toPandas import getAsPandas
+from utils.misc import getN
 
 
 
