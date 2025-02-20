@@ -1,6 +1,7 @@
 import ROOT
 import os, time
 import numpy as np
+import pandas as pd
 import glob
 from datetime import datetime
 from typing import Union
@@ -8,7 +9,7 @@ from SndlhcGeo import GeoInterface
 from ddfUtils import getSubDirPath, getAllFiles
 from utils.tracks import sys, alg, system, algorithm, att
 from utils.misc import nType, nName, getTChain, getTtFromSys, sfTrackIsReconstructible, dsTrackIsReconstructible, thereIsAMuon, getN
-from utils.misc import getN
+from utils.misc import getN, getFill, getRuns, getRunYear, getRunDate, getLumi
 
 
 class SndData:
@@ -527,68 +528,3 @@ class DdfMCTrack():
             print(f" > Event Number:   {self.EventHeader.GetEventNumber():,}")
         else:
             print(" > Event:          None")
-
-
-
-
-
-def getFill(run: int, rootDir: str = "/eos/experiment/sndlhc/convertedData/physics/2023") -> Union[int, None]:
-    dataDir = getSubDirPath(TopDir=f"run_{run:06d}", RootDir=rootDir)
-
-    try:
-        file_ = getAllFiles(dataDir, "*.root")[0]
-        tfile = ROOT.TFile.Open(file_)
-    except Exception as e:
-        print(f"Error opening file: {e}")
-        return None
-    if tfile.Get("cbmsim"):
-        ttree = tfile.Get("cbmsim")
-    elif tfile.Get("rawConv"):
-        ttree = tfile.Get("rawConv")
-    else:
-        return None
-
-    try:
-        ttree.GetEntry(0)
-        return int(ttree.EventHeader.GetFillNumber())
-    except Exception as e:
-        print(f"Error accessing data: {e}")
-        return None
-
-def getLumi(run: int) -> float:
-    def makeUnixTime(year, month, day, hour, minute, second) :
-        dt = datetime(year, month, day, hour, minute, second)
-        return time.mktime(dt.timetuple())
-
-    atlas_online_lumi = ROOT.TChain("atlas_lumi")
-
-    fill = getFill(run)
-
-    input_dir = "/eos/experiment/sndlhc/atlas_lumi"
-    atlas_online_lumi.Add(f"{input_dir}/fill_{fill:06d}.root")
-
-    delivered_inst_lumi = []
-    delivered_unix_timestamp = []
-    delivered_run_number = []
-    delivered_fill_number = []
-    fill = 0
-
-    for entry in atlas_online_lumi :
-        delivered_inst_lumi.append(entry.var)
-        delivered_unix_timestamp.append(entry.unix_timestamp)
-
-    recorded_mask = np.array(True)
-    delivered_inst_lumi = np.array(delivered_inst_lumi)
-    delivered_unix_timestamp = np.array(delivered_unix_timestamp)
-
-    delivered_deltas = delivered_unix_timestamp[1:] - delivered_unix_timestamp[:-1]
-    delivered_mask = delivered_deltas < 600
-
-    delivered_run = np.logical_and(delivered_unix_timestamp[1:] > fill, delivered_mask)
-
-
-    return np.cumsum(
-        np.multiply(
-            delivered_deltas[delivered_run], delivered_inst_lumi[1:][delivered_run]
-        )
-    )[-1]/1e3

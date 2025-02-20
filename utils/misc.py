@@ -1,6 +1,11 @@
+import re, os, json, time
 import ROOT
 import glob
+import numpy as np
+import pandas as pd
+import datetime
 from typing import Union
+from ddfUtils import getSubDirPath, getAllFiles
 
 def nType(tt: int) -> str:
     if   tt==1  or tt==3:  return 'clusters'
@@ -157,3 +162,193 @@ def dsTrackIsReconstructible(
         return True
     else:
         return False
+
+
+
+def getFillFromRoot(run: int):
+    year = getRunYear(run)
+    rootDir = f"/eos/experiment/sndlhc/convertedData/physics/{year}"
+    dataDir = getSubDirPath(TopDir=f"run_{run:06d}", RootDir=rootDir)
+
+    try:
+        file_ = getAllFiles(dataDir, "*.root")[0]
+        tfile = ROOT.TFile.Open(file_)
+    except Exception as e:
+        raise ValueError(f"Error opening file: {e}")
+        return None
+
+    if tfile.Get("cbmsim"):
+        ttree = tfile.Get("cbmsim")
+    elif tfile.Get("rawConv"):
+        ttree = tfile.Get("rawConv")
+    else:
+        raise ValueError("No tree found")
+        return None
+
+    try:
+        ttree.GetEntry(0)
+        return int(ttree.EventHeader.GetFillNumber())
+    except Exception as e:
+        raise ValueError(f"Error accessing data: {e}")
+        return None
+
+
+
+def getFillFromJson(
+    run: int,
+    jsonFile: str = "/eos/user/i/idioniso/1_Data/sndRuns.json"
+):
+    run = str(run)
+    with open(jsonFile, "r") as f:
+        data = json.load(f)
+    return data.get(run)
+
+
+def getFill(run: int, jsonFile: str = "/eos/user/i/idioniso/1_Data/sndRuns.json"):
+    fill = getFillFromJson(run, jsonFile)
+    if fill is None:
+        fill = getFillFromRoot(run)
+
+    if fill is None:
+        raise ValueError(f"Fill number not found for run {run}")
+    else:
+        return fill
+
+
+
+
+
+def getRuns(year: int):
+    path = f"/eos/experiment/sndlhc/convertedData/physics/{year}"
+    runs = [int(re.search(r'run_(\d+)', d).group(1)) for d in os.listdir(path) if re.match(r'run_\d+', d)]
+    return runs
+
+
+def getRunYear(run: int) -> int:
+    yi = 2022
+    yf = datetime.date.today().year
+
+    for y in range(yi, yf+1):
+        runs = getRuns(y)
+
+        if run in runs:
+            return y
+
+    raise ValueError(f"Run {run} was not found!")
+
+
+
+
+
+
+
+
+
+def getLumiEos(run: int) -> float:
+    def makeUnixTime(year, month, day, hour, minute, second) :
+        dt = datetime.datetime(year, month, day, hour, minute, second)
+        return time.mktime(dt.timetuple())
+
+    atlas_online_lumi = ROOT.TChain("atlas_lumi")
+
+    fill = getFill(run)
+
+    input_dir = "/eos/experiment/sndlhc/atlas_lumi"
+    atlas_online_lumi.Add(f"{input_dir}/fill_{fill:06d}.root")
+
+    delivered_inst_lumi = []
+    delivered_unix_timestamp = []
+    delivered_run_number = []
+    delivered_fill_number = []
+    fill = 0
+
+    for entry in atlas_online_lumi :
+        delivered_inst_lumi.append(entry.var)
+        delivered_unix_timestamp.append(entry.unix_timestamp)
+
+    recorded_mask = np.array(True)
+    delivered_inst_lumi = np.array(delivered_inst_lumi)
+    delivered_unix_timestamp = np.array(delivered_unix_timestamp)
+
+    delivered_deltas = delivered_unix_timestamp[1:] - delivered_unix_timestamp[:-1]
+    delivered_mask = delivered_deltas < 600
+
+    delivered_run = np.logical_and(delivered_unix_timestamp[1:] > fill, delivered_mask)
+
+
+    return np.cumsum(
+        np.multiply(
+            delivered_deltas[delivered_run], delivered_inst_lumi[1:][delivered_run]
+        )
+    )[-1]/1e3
+
+
+def getLumiSupertable(run: int) -> float:
+    runYear = getRunYear(run)
+    fill = getFill(run)
+
+    supertable = f"/eos/user/i/idioniso/1_Data/supertable{runYear}.csv"
+    st = pd.read_csv(supertable)
+    st['ATLAS Int. Lumi [1/nb]'] = st['ATLAS Int. Lumi [1/nb]'].astype(float)
+    st['Fill'] = st['Fill'].astype(int)
+
+    lumi = st.loc[st['Fill'] == fill, 'ATLAS Int. Lumi [1/nb]'].values[0]
+    return lumi
+
+def getLumi(run: int, option: str = "eos") -> float:
+    if option.lower() in ["eos"]:
+        return getLumiEos(run)
+    elif option.lower() in ["supertable", "st"]:
+        return getLumiSupertable(run)
+    else:
+        raise ValueError(f"Invalid option: {option}")
+
+
+
+def getRunTimestamp(run: int):
+    fill = getFill(run)
+    year = getRunYear(run)
+    st = pd.read_csv(f"/eos/user/i/idioniso/1_Data/supertable{year}.csv")
+
+    if fill in st['Fill'].values:
+        timestamp = st.loc[st['Fill'] == fill, 'Fill Start']
+        return int(timestamp.iloc[0])
+    return None
+
+
+
+def getRunDateFromRoot(run: int):
+    year = getRunYear(run)
+
+    inputDir = f"/eos/experiment/sndlhc/convertedData/physics/{year}/run_{run:06d}"
+    try:
+        tfile = ROOT.TFile.Open(f"{inputDir}/sndsw_raw-0000.root")
+    except Exception as e:
+        print(f"Error opening file: {e}")
+        return None
+    if tfile.Get("cbmsim"):
+        ttree = tfile.Get("cbmsim")
+    elif tfile.Get("rawConv"):
+        ttree = tfile.Get("rawConv")
+    else:
+        raise ValueError("No tree of name cbmsim/rawConv was found!")
+
+    try:
+        ttree.GetEntry(0)
+        utc_timestamp = ttree.EventHeader.GetUTCtimestamp()
+        date_ = datetime.datetime.utcfromtimestamp(utc_timestamp)
+        return date_
+    except Exception as e:
+        print(f"Error accessing data: {e}")
+        return None
+
+def getRunDateFromSupertable(run: int):
+    return datetime.datetime.fromtimestamp(getRunTimestamp(run)/1000, tz=datetime.timezone.utc)
+
+def getRunDate(run: int, option: str = "st"):
+    if option.lower() in ["st", "supertable"]:
+        return getRunDateFromSupertable(run)
+    elif option.lower() in ["eos", "root"]:
+        return getRunDateFromRoot(run)
+    else:
+        raise ValueError(f"Invalid option: {option}")

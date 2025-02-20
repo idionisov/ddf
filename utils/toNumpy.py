@@ -1,7 +1,10 @@
+import ROOT
+import uproot
+import numpy as np
+from typing import Union
 from utils.th1 import isTH1, isTH2, isTProfile, isTProfile2D, \
-    getNumpyFromTH2, getNumpyFromTProfile2D, getNumpyFromTProfile, \
-    getNumpyFromTH1
-from teff import getNumpyFromTEff2D, getNumpyFromTEff1D
+    getNumpyFromTH2, getNumpyFromTH1
+from utils.teff import getNumpyFromTEff2D, getNumpyFromTEff1D
 
 
 

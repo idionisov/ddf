@@ -68,7 +68,7 @@ class DdfEff1D(DdfBaseEff):
 
 
     def GetGraph(self) -> ROOT.TGraph:
-        return getGraphFromTEff1D(self.TEfficiency, self.Name, self.Title)
+        return getGraphFromTEff(self.TEfficiency, self.Name, self.Title)
 
 
 
@@ -91,11 +91,11 @@ class DdfEff2D(DdfBaseEff):
         self.TEfficiency = self.GetTEfficiency(Passed, Total)
 
     def GetGraph(self) -> ROOT.TGraph2D:
-        return getGraphFromTEff2D(self.TEfficiency, self.Name, self.Title)
+        return getGraphFromTEff(self.TEfficiency, self.Name, self.Title)
 
 
     def GetTH2(self) -> ROOT.TH2:
-        return getHistFromTEff2D(self.TEfficiency, self.Name, self.Title)
+        return getHistFromTEff(self.TEfficiency, self.Name, self.Title)
 
 
 
@@ -200,7 +200,7 @@ def getTEffDict(
                     Title = title
                 )
                 if teffs[key].Dim==1:
-                    teffs[key]=teffs[key].GetGraph()
+                    teffs[key] = teffs[key].GetGraph()
                     teffs[key].SetMinimum(0)
                     teffs[key].SetMaximum(1.05)
                 else:
@@ -255,7 +255,7 @@ def _saveToRoot(*objects,
 
         elif isinstance(obj, dict):
             for sub_key, sub_obj in obj.items():
-                sub_key_str = str(sub_key)  # Ensure sub_key is a string
+                sub_key_str = str(sub_key)
                 sub_dir_path = f"{path}/{sub_key_str}" if path else sub_key_str
 
                 if not current_dir.GetDirectory(sub_key_str):

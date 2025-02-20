@@ -84,7 +84,7 @@ def setStatOption(
 
 
 
-def getStatOption(teff: ROOT.TEfficiency) -> str:
+def getStatOption(teff: ROOT.TEfficiency) -> Union[str, None]:
     statOption = teff.GetStatisticOption()
 
     if   statOption==0:  return "Clopper Pearson"
@@ -104,9 +104,12 @@ def getGraphFromTEff1D(teff: ROOT.TEfficiency, name: str = '', title: str = '', 
     if teff.GetDimension() != 1:
         raise ValueError("TEfficiency object is not one-dimensional!")
 
-    if not name:  name  = teff.GetName()
-    if not title: title = teff.GetTitle()
-    if suffix:    name = f"{name}_{suffix}"
+    if not name:
+        name  = teff.GetName()
+    if not title:
+        title = teff.GetTitle()
+    if suffix:
+        name = f"{name}_{suffix}"
 
     Total = teff.GetTotalHistogram()
     nBins = Total.GetNbinsX()
@@ -118,8 +121,10 @@ def getGraphFromTEff1D(teff: ROOT.TEfficiency, name: str = '', title: str = '', 
     eyh = np.array([teff.GetEfficiencyErrorUp(bin) for bin in range(1, nBins + 1)], dtype=np.float64)
 
     graph = ROOT.TGraphAsymmErrors(nBins, x, y, ex, ex, eyl, eyh)
-    if name.startswith("gr_"): graph.SetName(name)
-    else:                      graph.SetName(f"gr_{name}")
+    if name.startswith("gr_"):
+        graph.SetName(name)
+    else:
+        graph.SetName(f"gr_{name}")
     graph.SetTitle(title)
 
     return graph
@@ -135,9 +140,12 @@ def getGraphFromTEff2D(
     if teff.GetDimension() != 2:
         raise ValueError("TEfficiency object is not two-dimensional!")
 
-    if not name:  name  = teff.GetName()
-    if not title: title = teff.GetTitle()
-    if suffix:    name = f"{name}_{suffix}"
+    if not name:
+        name  = teff.GetName()
+    if not title:
+        title = teff.GetTitle()
+    if suffix:
+        name = f"{name}_{suffix}"
 
     Total = teff.GetTotalHistogram()
     nBinsX = Total.GetNbinsX()
@@ -160,8 +168,10 @@ def getGraphFromTEff2D(
     )
 
 
-    if name.startswith("gr_"): graph.SetName(name)
-    else:                      graph.SetName(f"gr_{name}")
+    if name.startswith("gr_"):
+        graph.SetName(name)
+    else:
+        graph.SetName(f"gr_{name}")
     graph.SetTitle(title)
 
     return graph
@@ -174,7 +184,7 @@ def getGraphFromTEff(
     suffix: str = ""
 ):
     if teff.GetDimension() == 1:
-        return (teff, name, title, suffix)
+        return getGraphFromTEff1D(teff, name, title, suffix)
     elif teff.GetDimension() == 2:
         return getGraphFromTEff2D(teff, name, title, suffix)
     else:

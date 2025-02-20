@@ -1,3 +1,4 @@
+from typing import Union
 import ROOT
 
 
@@ -22,7 +23,7 @@ def axes(
             object.GetZaxis().CenterTitle(centerAxesTitles)
 
 
-def initSndStyle():
+def setSndStyle():
 
     # for the canvas:
     ROOT.gStyle.SetCanvasBorderMode(0)
@@ -134,15 +135,17 @@ def initSndStyle():
     # ROOT.gStyle.SetHatchesSpacing(0.05)
 
 
-def writeSND(
-    pad,
-    textFactor=0.4,
-    textOffset=0.01,
-    extraText=None,
-    textIn=True,
-    rfrac=0.0,
-    mainText="SND@LHC",
+def addRootLabel(
+    pad: Union[ROOT.TPad, ROOT.TCanvas, None],
+    textFactor: float = 0.4,
+    textOffset: float = 0.01,
+    extraText: Union[str, None] = None,
+    textIn: bool = True,
+    rfrac: float = 0.0,
+    mainText: str = "SND@LHC",
 ):
+    if pad is None:
+        pad = ROOT.gPad
 
     pad.Update()
 
