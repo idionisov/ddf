@@ -528,3 +528,21 @@ class DdfMCTrack():
             print(f" > Event Number:   {self.EventHeader.GetEventNumber():,}")
         else:
             print(" > Event:          None")
+
+
+
+def getMuonFlux(N: int, A: float, eff: float, L: float, scale: int = 1):
+    N *= scale
+    return N/(A*eff*L)
+
+def getMuonFluxErr(N: int, A: float, eff: float, L: float, deff: float, dL: float = -999, scale: int = 1):
+    dN = np.sqrt(N)
+    if dL<0:
+        dL = 0.02*L
+
+    N *= scale
+    dPhi_dL = -N/(A*eff*(L**2))
+    dPhi_deff = -N/(A*(eff**2)*L)
+    dPhi_dN = 1/(A*eff*L)
+
+    return np.sqrt(dPhi_dL**2 * dL**2 + dPhi_deff**2 * deff**2 + dPhi_dN**2 * dN**2)

@@ -165,48 +165,48 @@ def dsTrackIsReconstructible(
 
 
 
-def getFillFromRoot(run: int):
-    year = getRunYear(run)
-    rootDir = f"/eos/experiment/sndlhc/convertedData/physics/{year}"
-    dataDir = getSubDirPath(TopDir=f"run_{run:06d}", RootDir=rootDir)
-
-    try:
-        file_ = getAllFiles(dataDir, "*.root")[0]
-        tfile = ROOT.TFile.Open(file_)
-    except Exception as e:
-        raise ValueError(f"Error opening file: {e}")
-        return None
-
-    if tfile.Get("cbmsim"):
-        ttree = tfile.Get("cbmsim")
-    elif tfile.Get("rawConv"):
-        ttree = tfile.Get("rawConv")
-    else:
-        raise ValueError("No tree found")
-        return None
-
-    try:
-        ttree.GetEntry(0)
-        return int(ttree.EventHeader.GetFillNumber())
-    except Exception as e:
-        raise ValueError(f"Error accessing data: {e}")
-        return None
-
-
-
-def getFillFromJson(
-    run: int,
-    jsonFile: str = "/eos/user/i/idioniso/1_Data/sndRuns.json"
-):
-    run = str(run)
-    with open(jsonFile, "r") as f:
-        data = json.load(f)
-    return data.get(run)
-
-
 def getFill(run: int, jsonFile: str = "/eos/user/i/idioniso/1_Data/sndRuns.json"):
+    def getFillFromJson(
+        run: int,
+        jsonFile: str = "/eos/user/i/idioniso/1_Data/sndRuns.json"
+    ):
+        run = str(run)
+        with open(jsonFile, "r") as f:
+            data = json.load(f)
+        return data.get(run)
+
     fill = getFillFromJson(run, jsonFile)
     if fill is None:
+        def getFillFromRoot(run: int):
+            year = getRunYear(run)
+            if year==2024:
+                rootDir =  "/eos/experiment/sndlhc/convertedData/physics/2024/run_2412"
+            else:
+                rootDir = f"/eos/experiment/sndlhc/convertedData/physics/{year}"
+            dataDir = f"{rootDir}/run_{run:06d}"
+
+            try:
+                file_ = getAllFiles(dataDir, "*.root")[0]
+                tfile = ROOT.TFile.Open(file_)
+            except Exception as e:
+                raise ValueError(f"Error opening file: {e}")
+                return None
+
+            if tfile.Get("cbmsim"):
+                ttree = tfile.Get("cbmsim")
+            elif tfile.Get("rawConv"):
+                ttree = tfile.Get("rawConv")
+            else:
+                raise ValueError("No tree found")
+                return None
+
+            try:
+                ttree.GetEntry(0)
+                return int(ttree.EventHeader.GetFillNumber())
+            except Exception as e:
+                raise ValueError(f"Error accessing data: {e}")
+                return None
+
         fill = getFillFromRoot(run)
 
     if fill is None:
@@ -219,6 +219,11 @@ def getFill(run: int, jsonFile: str = "/eos/user/i/idioniso/1_Data/sndRuns.json"
 
 
 def getRuns(year: int):
+    if year==2024:
+        path = "/eos/experiment/sndlhc/convertedData/physics/2024/run_2412"
+        runs = [int(re.search(r'run_(\d+)', d).group(1)) for d in os.listdir(path) if re.match(r'run_\d+', d)]
+        return runs
+
     path = f"/eos/experiment/sndlhc/convertedData/physics/{year}"
     runs = [int(re.search(r'run_(\d+)', d).group(1)) for d in os.listdir(path) if re.match(r'run_\d+', d)]
     return runs
@@ -237,9 +242,36 @@ def getRunYear(run: int) -> int:
     raise ValueError(f"Run {run} was not found!")
 
 
+def getRunDirectory(run: int) -> str:
+    year = getRunYear(run)
+    if year == 2024:
+        path = f"/eos/experiment/sndlhc/convertedData/physics/2024/run_2412/run_{run:06d}"
+    else:
+        path = f"/eos/experiment/sndlhc/convertedData/physics/{year}/run_{run:06d}"
+    return path
 
 
+def getRunFiles(run: int):
+    runDir = getRunDirectory(run)
 
+    rootFiles = glob.glob(
+        os.path.join(runDir, "sndsw_raw-*.root")
+    )
+    return rootFiles
+
+
+def getRunEntries(run: int) -> int:
+    dir = getRunDirectory(run)
+    tree = ROOT.TChain("cbmsim")
+    tree.Add(f"{dir}/sndsw_raw-*.root")
+
+    nEntries = tree.GetEntries()
+    if nEntries == 0:
+        tree = ROOT.TChain("rawConv")
+        tree.Add(f"{dir}/sndsw_raw-*.root")
+        nEntries = tree.GetEntries()
+
+    return nEntries
 
 
 
@@ -305,16 +337,41 @@ def getLumi(run: int, option: str = "eos") -> float:
 
 
 
-def getRunTimestamp(run: int):
-    fill = getFill(run)
-    year = getRunYear(run)
-    st = pd.read_csv(f"/eos/user/i/idioniso/1_Data/supertable{year}.csv")
+def getRunTimestamp(run: int, fromRoot: bool):
+    def getRunTimestampFromRoot(run: int):
+        dir = getRunDirectory(run)
+        tree = ROOT.TChain("cbmsim")
+        tree.Add(f"{dir}/sndsw_raw-*.root")
 
-    if fill in st['Fill'].values:
-        timestamp = st.loc[st['Fill'] == fill, 'Fill Start']
-        return int(timestamp.iloc[0])
-    return None
+        if tree.GetEntries() == 0:
+            raise ValueError(f"No root files found for run {run}")
 
+        tree.GetEntry(0)
+        return tree.EventHeader.GetUTCtimestamp()
+
+    if fromRoot:
+        return getRunTimestampFromRoot(run)
+    else:
+        fill = getFill(run)
+        year = getRunYear(run)
+        supertable = f"/eos/user/i/idioniso/1_Data/supertable{year}.csv"
+        if os.path.exists(supertable):
+            st = pd.read_csv(supertable)
+
+            if fill in st['Fill'].values:
+                timestamp = st.loc[st['Fill'] == fill, 'Fill Start']
+                return int(timestamp.iloc[0])/1e3
+            return None
+        else:
+            dir = getRunDirectory(run)
+            tree = ROOT.TChain("cbmsim")
+            tree.Add(f"{dir}/sndsw_raw-*.root")
+
+            if tree.GetEntries() == 0:
+                raise ValueError(f"No root files found for run {run}")
+
+            tree.GetEntry(0)
+            return tree.EventHeader.GetUTCtimestamp()
 
 
 def getRunDateFromRoot(run: int):
@@ -343,7 +400,7 @@ def getRunDateFromRoot(run: int):
         return None
 
 def getRunDateFromSupertable(run: int):
-    return datetime.datetime.fromtimestamp(getRunTimestamp(run)/1000, tz=datetime.timezone.utc)
+    return datetime.datetime.fromtimestamp(getRunTimestamp(run), tz=datetime.timezone.utc)
 
 def getRunDate(run: int, option: str = "st"):
     if option.lower() in ["st", "supertable"]:
