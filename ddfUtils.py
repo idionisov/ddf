@@ -4,7 +4,7 @@ from time import time
 from typing import Union
 from scipy.stats import beta, norm
 
-def getSubDirPath(
+def _getSubDirPath(
     TopDir:  str,
     RootDir: str = "/eos/experiment/sndlhc/convertedData/physics",
 ) -> str:
@@ -26,6 +26,21 @@ def getSubDirPath(
             return os.path.join(dirPath, TopDir)
         else:
             raise ValueError(f"No subdirectory '{TopDir}' was found in {RootDir}!")
+
+def getSubDirPath(
+    TopDir:  str,
+    RootDir: str = "/eos/experiment/sndlhc/convertedData/physics"
+):
+    """
+    Return a list of full paths to subdirectories named `TopDir`,
+    starting from `root_path`.
+    """
+
+    matchingDirs = []
+    for dirpath, dirnames, _ in os.walk(RootDir):
+        if os.path.basename(dirpath) == TopDir:
+            matchingDirs.append(dirpath)
+    return matchingDirs
 
 def getAllFiles(inputDir: str, files: str) -> list:
     """

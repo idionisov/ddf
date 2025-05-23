@@ -2,7 +2,9 @@ import re, os, json, time
 import ROOT
 import glob
 import numpy as np
+import matplotlib.pyplot as plt
 import pandas as pd
+import uproot
 import datetime
 from typing import Union
 from ddfUtils import getSubDirPath, getAllFiles
@@ -219,9 +221,14 @@ def getFill(run: int, jsonFile: str = "/eos/user/i/idioniso/1_Data/sndRuns.json"
 
 
 def getRuns(year: int):
-    if year==2024:
-        path = "/eos/experiment/sndlhc/convertedData/physics/2024/run_2412"
-        runs = [int(re.search(r'run_(\d+)', d).group(1)) for d in os.listdir(path) if re.match(r'run_\d+', d)]
+    if year>=2024:
+        path = f"/eos/experiment/sndlhc/convertedData/physics/{year}"
+        runs = []
+        runs0 = [int(re.search(r'run_(\d+)', d1).group(1)) for d1 in os.listdir(path) if re.match(r'run_\d+', d1)]
+        for run0 in runs0:
+            for d2 in os.listdir(f'{path}/run_{run0}'):
+                if re.match(r'run_\d+', d2):
+                    runs.append(int(re.search(r'run_(\d+)', d2).group(1)) )
         return runs
 
     path = f"/eos/experiment/sndlhc/convertedData/physics/{year}"
@@ -276,7 +283,7 @@ def getRunEntries(run: int) -> int:
 
 
 
-def getLumiEos(run: int) -> float:
+def getLumiEosDec(run: int, Ti: float = 0, Tf: float = 1e12) -> float:
     def makeUnixTime(year, month, day, hour, minute, second) :
         dt = datetime.datetime(year, month, day, hour, minute, second)
         return time.mktime(dt.timetuple())
@@ -287,6 +294,75 @@ def getLumiEos(run: int) -> float:
 
     input_dir = "/eos/experiment/sndlhc/atlas_lumi"
     atlas_online_lumi.Add(f"{input_dir}/fill_{fill:06d}.root")
+
+    delivered_inst_lumi = []
+    delivered_unix_timestamp = []
+    delivered_run_number = []
+    delivered_fill_number = []
+    fill = 0
+
+    for entry in atlas_online_lumi :
+        ts = entry.unix_timestamp
+        if ts < Ti:
+            continue
+        elif ts > Tf:
+            break
+
+        delivered_inst_lumi.append(entry.var)
+        delivered_unix_timestamp.append(ts)
+
+    recorded_mask = np.array(True)
+    delivered_inst_lumi = np.array(delivered_inst_lumi)
+    delivered_unix_timestamp = np.array(delivered_unix_timestamp)
+
+    delivered_deltas = delivered_unix_timestamp[1:] - delivered_unix_timestamp[:-1]
+    delivered_mask = delivered_deltas < 600
+
+    delivered_run = np.logical_and(delivered_unix_timestamp[1:] > fill, delivered_mask)
+
+
+    return np.cumsum(
+        np.multiply(
+            delivered_deltas[delivered_run], delivered_inst_lumi[1:][delivered_run]
+        )
+    )[-1]/1e3
+
+
+
+def getLumiDf(run: int):
+    return uproot.open(f"/eos/experiment/sndlhc/atlas_lumi/fill_{getFill(run):06d}.root")["atlas_lumi"].arrays(library="pd")
+
+def plotLumi(run: int, showPlot: bool = True):
+    df = getLumiDf(run)
+    plt.plot(df["unix_timestamp"], df["var"], label=f"Run {run} (fill {getFill(run)})")
+    if showPlot:
+        plt.show()
+
+def getLumiTimes(run: int):
+    df = getLumiDf(run)
+    t0 = df.iloc[0]["unix_timestamp"]
+    tf = df.iloc[-1]["unix_timestamp"]
+    threshold = 0.95 * df["var"].max()
+    ti = df[df["var"] < threshold].iloc[0]["unix_timestamp"]
+
+    return t0, ti, tf
+
+
+def getLumiEos(run: int) -> float:
+    def makeUnixTime(year, month, day, hour, minute, second) :
+        dt = datetime.datetime(year, month, day, hour, minute, second)
+        return time.mktime(dt.timetuple())
+
+    atlas_online_lumi = ROOT.TChain("atlas_lumi")
+
+    fill = getFill(run)
+
+    input_dir = "/eos/experiment/sndlhc/atlas_lumi"
+    file_path = f"{input_dir}/fill_{fill:06d}.root"
+    if not os.path.exists(file_path):
+        return None
+
+    atlas_online_lumi.Add(file_path)
 
     delivered_inst_lumi = []
     delivered_unix_timestamp = []
@@ -315,6 +391,49 @@ def getLumiEos(run: int) -> float:
     )[-1]/1e3
 
 
+
+def getLumiEosHi(run: int):
+    def makeUnixTime(year, month, day, hour, minute, second) :
+        dt = datetime.datetime(year, month, day, hour, minute, second)
+        return time.mktime(dt.timetuple())
+
+    atlas_online_lumi = ROOT.TChain("atlas_lumi")
+
+    fill = getFill(run)
+
+    input_dir = "/eos/experiment/sndlhc/atlas_lumi_hi"
+    file_path = f"{input_dir}/fill_{fill:06d}.root"
+    if not os.path.exists(file_path):
+        return None
+
+    atlas_online_lumi.Add(file_path)
+
+    delivered_inst_lumi = []
+    delivered_unix_timestamp = []
+    delivered_run_number = []
+    delivered_fill_number = []
+    fill = 0
+
+    for entry in atlas_online_lumi :
+        delivered_inst_lumi.append(entry.var)
+        delivered_unix_timestamp.append(entry.unix_timestamp)
+
+    recorded_mask = np.array(True)
+    delivered_inst_lumi = np.array(delivered_inst_lumi)
+    delivered_unix_timestamp = np.array(delivered_unix_timestamp)
+
+    delivered_deltas = delivered_unix_timestamp[1:] - delivered_unix_timestamp[:-1]
+    delivered_mask = delivered_deltas < 600
+
+    delivered_run = np.logical_and(delivered_unix_timestamp[1:] > fill, delivered_mask)
+
+
+    return np.cumsum(
+        np.multiply(
+            delivered_deltas[delivered_run], delivered_inst_lumi[1:][delivered_run]
+        )
+    )[-1]/1e3
+
 def getLumiSupertable(run: int) -> float:
     runYear = getRunYear(run)
     fill = getFill(run)
@@ -322,10 +441,20 @@ def getLumiSupertable(run: int) -> float:
     supertable = f"/eos/user/i/idioniso/1_Data/supertable{runYear}.csv"
     st = pd.read_csv(supertable)
     st['ATLAS Int. Lumi [1/nb]'] = st['ATLAS Int. Lumi [1/nb]'].astype(float)
-    st['Fill'] = st['Fill'].astype(int)
+
+    row = st.loc[st['Fill'] == fill]
+
+    if row.empty:
+        return None
+
+    lumi_value = row['ATLAS Int. Lumi [1/nb]'].values[0]
+    fill_value = row['Fill'].values[0]
+
+    if pd.isna(lumi_value) or pd.isna(fill_value):
+        return None
 
     lumi = st.loc[st['Fill'] == fill, 'ATLAS Int. Lumi [1/nb]'].values[0]
-    return lumi
+    return lumi_value
 
 def getLumi(run: int, option: str = "eos") -> float:
     if option.lower() in ["eos"]:
@@ -409,3 +538,73 @@ def getRunDate(run: int, option: str = "st"):
         return getRunDateFromRoot(run)
     else:
         raise ValueError(f"Invalid option: {option}")
+
+
+
+
+
+
+
+def getNewMFDF(mf):
+    fluxEosOg = {"v": { tt: [] for tt in (1, 11, 3, 13)}, "e": {tt: [] for tt in (1, 11, 3, 13)}}
+    fluxEosHi = {"v": { tt: [] for tt in (1, 11, 3, 13)}, "e": {tt: [] for tt in (1, 11, 3, 13)}}
+    fluxSt = {"v": { tt: [] for tt in (1, 11, 3, 13)}, "e": {tt: [] for tt in (1, 11, 3, 13)}}
+    for i in mf.index:
+        run = mf.at[i, "Run"]
+
+        if run==10241:
+            for a in ("v", "e"):
+                for tt in (1, 11, 3, 13):
+                    fluxEosOg[a][tt].append(np.nan)
+                    fluxEosHi[a][tt].append(np.nan)
+                    fluxSt[a][tt].append(np.nan)
+            continue
+
+        N = {
+            tt: nTracks.loc[nTracks["Run"]==run, f"nTracks{tt}"].iloc[-1] for tt in (1, 11, 3, 13)
+        }
+        k = nTracks.loc[nTracks["Run"]==run, "scale"].iloc[-1]
+        A = 928
+        L_eos_og = getLumi(run, "eos")
+        L_eos_hi = getLumiEosHi(run)
+        L_st = getLumi(run, "st")
+        dL = 0.035
+        if getRunYear(run) == 2023:
+            eff = {
+                 "v": {1: 0.868, 11: 0.950, 3: 0.779, 13: 0.777},
+                 "e": {1: 0.009, 11: 0.010, 3: 0.011, 13: 0.020}
+             }
+        else:
+            eff = {
+                "v": {1: 0.790, 11: 0.864, 3: 0.723, 13: 0.755},
+                "e": {1: 0.066, 11: 0.059, 3: 0.069, 13: 0.062}
+            }
+
+        for tt in (1, 11, 3, 13):
+            flux, fluxErr = getFluxWithErr(N[tt], eff["v"][tt], L_eos_og, eff["e"][tt], dL, k, A)
+            fluxEosOg["v"][tt].append(flux)
+            fluxEosOg["e"][tt].append(fluxErr)
+            if L_st is not None:
+                flux, fluxErr = getFluxWithErr(N[tt], eff["v"][tt], L_st, eff["e"][tt], dL, k, A)
+                fluxSt["v"][tt].append(flux)
+                fluxSt["e"][tt].append(fluxErr)
+            else:
+                fluxSt["v"][tt].append(np.nan)
+                fluxSt["e"][tt].append(np.nan)
+            if L_eos_hi is not None:
+                flux, fluxErr = getFluxWithErr(N[tt], eff["v"][tt], L_eos_hi, eff["e"][tt], dL, k, A)
+                fluxEosHi["v"][tt].append(flux)
+                fluxEosHi["e"][tt].append(fluxErr)
+            else:
+                fluxEosHi["v"][tt].append(np.nan)
+                fluxEosHi["e"][tt].append(np.nan)
+
+    for tt in (1, 11, 3, 13):
+        mf[f"Flux{tt}_eos_og"] = fluxEosOg["v"][tt]
+        mf[f"FluxErr{tt}_eos_og"] = fluxEosOg["e"][tt]
+        mf[f"Flux{tt}_eos_hi"] = fluxEosHi["v"][tt]
+        mf[f"FluxErr{tt}_eos_hi"] = fluxEosHi["e"][tt]
+        mf[f"Flux{tt}_st"] = fluxSt["v"][tt]
+        mf[f"FluxErr{tt}_st"] = fluxSt["e"][tt]
+
+    return mf

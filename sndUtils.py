@@ -26,10 +26,10 @@ class SndData:
         else:
             self.Files = f"{Files}.root"
 
-        self.InputDir = getSubDirPath(TopDir=f"run_{Run:06d}", RootDir=InputDir)
+        self.InputDir = getSubDirPath(TopDir=f"run_{Run:06d}", RootDir=InputDir)[0]
         self.Date = self.GetDate()
         self.Fill = self.GetFill()
-        self.Tree = self.GetTChain(getSubDirPath(TopDir=f"run_{Run:06d}", RootDir=InputDir), Files)
+        self.Tree = self.GetTChain(getSubDirPath(TopDir=f"run_{Run:06d}", RootDir=InputDir)[0], Files)
 
         if Geofile:
             self.Geofile = Geofile
@@ -42,9 +42,11 @@ class SndData:
             self.Scifi = None
             self.Mufi = None
 
+        print(f"Run {Run} was successfully initialized.")
+
 
     def SetInputDir(self):
-        self.InputDir = getSubDirPath(TopDir=f"run_{self.Run:06d}", RootDir=self.InputDir)
+        self.InputDir = getSubDirPath(TopDir=f"run_{self.Run:06d}", RootDir=self.InputDir)[0]
 
     def GetDate(self) -> datetime:
         try:
@@ -531,18 +533,128 @@ class DdfMCTrack():
 
 
 
+
 def getMuonFlux(N: int, A: float, eff: float, L: float, scale: int = 1):
-    N *= scale
-    return N/(A*eff*L)
+    Ntracks = N
+    Ntracks *= scale
+    return Ntracks/(A*eff*L)
 
 def getMuonFluxErr(N: int, A: float, eff: float, L: float, deff: float, dL: float = -999, scale: int = 1):
     dN = np.sqrt(N)
     if dL<0:
-        dL = 0.02*L
+        dL = 0.035*L
 
-    N *= scale
-    dPhi_dL = -N/(A*eff*(L**2))
-    dPhi_deff = -N/(A*(eff**2)*L)
+    Ntracks = N
+    Ntracks *= scale
+    dN *= scale
+    dPhi_dL = -Ntracks/(A*eff*(L**2))
+    dPhi_deff = -Ntracks/(A*(eff**2)*L)
     dPhi_dN = 1/(A*eff*L)
 
     return np.sqrt(dPhi_dL**2 * dL**2 + dPhi_deff**2 * deff**2 + dPhi_dN**2 * dN**2)
+
+
+def getFluxWithErr(N: int, eff: float, L: float, effErr: float, dL: float = 0.035, k: int = 1, A: float = 928):
+    if dL < 0 or dL > 1:
+        raise ValueError("Luminosity error 'dL' have to be given as a fraction (from 0 to 1) of the total luminosity!")
+
+    flux = (N*k)/(A*L*eff)
+    dN = np.sqrt(N)
+
+    errN_2   = (k**2 * N)                / (A**2 * L**2 * eff**2)
+    errEff_2 = (k**2 * N**2 * effErr**2) / (A**2 * L**2 * eff**4)
+    errL_2   = (N**2 * k**2 * (dL*L)**2) / (A**2 * L**4 * eff**2)
+
+    errPhi_2 = errN_2 + errEff_2 + errL_2
+    errPhi = np.sqrt(errPhi_2)
+
+    print(f"Contributions to the squared error:")
+    print(f" > (stat) Number of tracks:   {errN_2}\t[{errN_2*100/errPhi_2:.02f}%]")
+    print(f" > (sys)  Efficiency:         {errEff_2}\t[{errEff_2*100/errPhi_2:.02f}%]")
+    print(f" > (sys)  Luminosity:         {errL_2}\t[{errL_2*100/errPhi_2:.02f}%]")
+    print(f" > Total variance:            {errPhi_2}")
+    print(f"\033[1;32m > Final result:          Φ = ({flux/1e3:.03f} ± {errPhi/1e3:.03f}) ⨯ 10³ [nb/cm²]\033[0m")
+
+    return flux, errPhi
+
+
+
+def getFluxWithErrAndRelativeVariances(N: int, eff: float, L: float, effErr: float, dL: float = 0.035, k: int = 1, A: float = 928):
+    if dL < 0 or dL > 1:
+        raise ValueError("Luminosity error 'dL' have to be given as a fraction (from 0 to 1) of the total luminosity!")
+
+    flux = (N*k)/(A*L*eff)
+    dN = np.sqrt(N)
+
+    errN_2   = (k**2 * N)                / (A**2 * L**2 * eff**2)
+    errEff_2 = (k**2 * N**2 * effErr**2) / (A**2 * L**2 * eff**4)
+    errL_2   = (N**2 * k**2 * (dL*L)**2) / (A**2 * L**4 * eff**2)
+
+    errPhi_2 = errN_2 + errEff_2 + errL_2
+    errPhi = np.sqrt(errPhi_2)
+
+    return flux, errPhi, errPhi_2, errN_2, errEff_2, errL_2
+
+
+
+def getMeanFlux(df, tt: int, lumi: str = "eos"):
+    weights = 1 / df[f"FluxErr{tt}_{lumi}"]**2
+
+    weighted_avg = np.sum(weights * df[f"Flux{tt}_{lumi}"]) / np.sum(weights)
+    weighted_avg_uncertainty = np.sqrt(1 / np.sum(weights))
+
+    return weighted_avg, np.std(df[f"Flux{tt}_{lumi}"]) + weighted_avg_uncertainty
+
+
+def getHitDensityWeight(sfHit, event, scifi):
+    sfHits = event.Digi_ScifiHits
+
+    station0 = sfHit.GetStation()
+    isVert0 = sfHit.IsVertical()
+    detId0 = sfHit.GetDetectorID()
+    hitDensity = 0
+
+    A, A0, B, B0 = ROOT.TVector3(), ROOT.TVector3(), ROOT.TVector3(), ROOT.TVector3()
+    scifi.GetSiPMPosition(detId0, A0, B0)
+    x0 = np.mean([A0.X(), B0.X()])
+    y0 = np.mean([A0.Y(), B0.Y()])
+
+    for sfHit2 in sfHits:
+        isVert = sfHit2.IsVertical()
+        station = sfHit2.GetStation()
+        detId = sfHit2.GetDetectorID()
+
+        if not (isVert0 == isVert and station0 == station and detId0 != detId):
+            continue
+
+        detID = sfHit2.GetDetectorID()
+        scifi.GetSiPMPosition(detID, A, B)
+        x = np.mean([A.X(), B.X()])
+        y = np.mean([A.Y(), B.Y()])
+
+        if (isVert and abs(x-x0)<=1):
+            hitDensity += 1
+        elif (not isVert and abs(y-y0)<=1):
+            hitDensity += 1
+        else:
+            continue
+
+    return hitDensity
+
+
+
+# In [28]: for i in mf.index:
+#     ...:     for tt in (1, 11, 3, 13):
+#     ...:         run = mf.at[i, "Run"]
+#     ...:         if not run in nTracks["Run"]:
+#     ...:             continue
+#     ...:         N = getNtracks(run, tt)
+#     ...:         scale = getScale(run)
+#     ...:         dN = np.sqrt(N) * scale
+#     ...:         T = mf.at[i, 'Stable B. time [h]']
+#     ...:         lnT = np.log(T)
+#     ...:         Phi = mf.at[i, f"Flux{tt}_eos"]
+#     ...:         PhiErr = mf.at[i, f"FluxErr{tt}_eos"]
+#     ...:         mf.at[i, f"Omega{tt} = Nln(T)/Phi"] = N*lnT/Phi
+#     ...:         mf.at[i, f"OmegaErr{tt}"] = np.sqrt((lnT*dN/Phi)**2 + ((N*lnT*PhiErr)/(Phi*Phi))**2)
+#     ...:

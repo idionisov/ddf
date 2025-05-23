@@ -5,7 +5,16 @@ import pandas as pd
 import uproot
 
 
-
+mplm = {
+   "o":  20,   # ROOT: Full circle → Matplotlib: Circle
+   "s":  21,   # ROOT: Full square → Matplotlib: Square
+   "D":  22,   # ROOT: Full diamond → Matplotlib: Diamond
+   "^":  23,   # ROOT: Full triangle up → Matplotlib: Triangle up
+   "v":  24,   # ROOT: Full triangle down → Matplotlib: Triangle down
+   "<":  25,   # ROOT: Full triangle left → Matplotlib: Triangle left
+   ">":  26,   # ROOT: Full triangle right → Matplotlib: Triangle right
+   "p":  27   # ROOT: Star → Matplotlib: Pentagon
+}
 
 def getTestTGraph(nPoints: int = 10):
     x = np.linspace(1, 10, nPoints)
@@ -256,3 +265,25 @@ def getPandasFromTGraph2D(tgraph: ROOT.TGraph2D):
         'y':  np.array(tgraph.member("fY"),   dtype=np.float64),
         'z':  np.array(tgraph.member("fZ"),   dtype=np.float64)
     })
+
+
+
+def getTGraphErrors(
+    x, y, ex, ey,
+    title: str = "",
+    xTitle: str = "",
+    yTitle: str = ""
+) -> ROOT.TGraphErrors:
+    N  = len(x)
+
+    x  = np.array(x,  dtype=np.float64)
+    y  = np.array(y,  dtype=np.float64)
+    ex = np.array(ex, dtype=np.float64)
+    ey = np.array(ey, dtype=np.float64)
+
+    graph = ROOT.TGraphErrors(N, x, y, ex, ey)
+    graph.SetTitle(title)
+    graph.GetXaxis().SetTitle(xTitle)
+    graph.GetYaxis().SetTitle(yTitle)
+
+    return graph
