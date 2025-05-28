@@ -181,11 +181,8 @@ def getFill(run: int, jsonFile: str = "/eos/user/i/idioniso/1_Data/sndRuns.json"
     if fill is None:
         def getFillFromRoot(run: int):
             year = getRunYear(run)
-            if year==2024:
-                rootDir =  "/eos/experiment/sndlhc/convertedData/physics/2024/run_2412"
-            else:
-                rootDir = f"/eos/experiment/sndlhc/convertedData/physics/{year}"
-            dataDir = f"{rootDir}/run_{run:06d}"
+            rootDir = f"/eos/experiment/sndlhc/convertedData/physics/{year}"
+            dataDir = getSubDirPath(RootDir=rootDir, TopDir=f"run_{run:06d}")[0]
 
             try:
                 file_ = getAllFiles(dataDir, "*.root")[0]

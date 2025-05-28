@@ -17,7 +17,8 @@ class SndData:
         Run: int,
         InputDir: str,
         Files: str = "*",
-        Geofile: Union[str, None] = None
+        Geofile: Union[str, None] = None,
+        TopDir: Union[str, None] = None
     ):
         self.Run = Run
 
@@ -26,10 +27,16 @@ class SndData:
         else:
             self.Files = f"{Files}.root"
 
-        self.InputDir = getSubDirPath(TopDir=f"run_{Run:06d}", RootDir=InputDir)[0]
+        if TopDir is None:
+            TopDir = f"run_{Run:06d}"
+        else:
+            TopDir = TopDir
+        print(getSubDirPath(TopDir=TopDir, RootDir=InputDir)[0])
+        self.InputDir = getSubDirPath(TopDir=TopDir, RootDir=InputDir)[0]
+
         self.Date = self.GetDate()
         self.Fill = self.GetFill()
-        self.Tree = self.GetTChain(getSubDirPath(TopDir=f"run_{Run:06d}", RootDir=InputDir)[0], Files)
+        self.Tree = self.GetTChain(getSubDirPath(TopDir=TopDir, RootDir=InputDir)[0], Files)
 
         if Geofile:
             self.Geofile = Geofile
@@ -610,7 +617,7 @@ def getHitDensityWeight(sfHit, event, scifi):
     sfHits = event.Digi_ScifiHits
 
     station0 = sfHit.GetStation()
-    isVert0 = sfHit.IsVertical()
+    isVert0 = sfHit.isVertical()
     detId0 = sfHit.GetDetectorID()
     hitDensity = 0
 
@@ -620,7 +627,7 @@ def getHitDensityWeight(sfHit, event, scifi):
     y0 = np.mean([A0.Y(), B0.Y()])
 
     for sfHit2 in sfHits:
-        isVert = sfHit2.IsVertical()
+        isVert = sfHit2.isVertical()
         station = sfHit2.GetStation()
         detId = sfHit2.GetDetectorID()
 
