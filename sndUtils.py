@@ -561,7 +561,7 @@ def getMuonFluxErr(N: int, A: float, eff: float, L: float, deff: float, dL: floa
     return np.sqrt(dPhi_dL**2 * dL**2 + dPhi_deff**2 * deff**2 + dPhi_dN**2 * dN**2)
 
 
-def getFluxWithErr(N: int, eff: float, L: float, effErr: float, dL: float = 0.035, k: int = 1, A: float = 928):
+def getFluxWithErr(N: int, eff: float, L: float, effErr: float, dL: float = 0.035, k: int = 1, A: float = 928, verbose: bool = True):
     if dL < 0 or dL > 1:
         raise ValueError("Luminosity error 'dL' have to be given as a fraction (from 0 to 1) of the total luminosity!")
 
@@ -575,12 +575,13 @@ def getFluxWithErr(N: int, eff: float, L: float, effErr: float, dL: float = 0.03
     errPhi_2 = errN_2 + errEff_2 + errL_2
     errPhi = np.sqrt(errPhi_2)
 
-    print(f"Contributions to the squared error:")
-    print(f" > (stat) Number of tracks:   {errN_2}\t[{errN_2*100/errPhi_2:.02f}%]")
-    print(f" > (sys)  Efficiency:         {errEff_2}\t[{errEff_2*100/errPhi_2:.02f}%]")
-    print(f" > (sys)  Luminosity:         {errL_2}\t[{errL_2*100/errPhi_2:.02f}%]")
-    print(f" > Total variance:            {errPhi_2}")
-    print(f"\033[1;32m > Final result:          Φ = ({flux/1e3:.03f} ± {errPhi/1e3:.03f}) ⨯ 10³ [nb/cm²]\033[0m")
+    if verbose:
+        print(f"Contributions to the squared error:")
+        print(f" > (stat) Number of tracks:   {errN_2}\t[{errN_2*100/errPhi_2:.02f}%]")
+        print(f" > (sys)  Efficiency:         {errEff_2}\t[{errEff_2*100/errPhi_2:.02f}%]")
+        print(f" > (sys)  Luminosity:         {errL_2}\t[{errL_2*100/errPhi_2:.02f}%]")
+        print(f" > Total variance:            {errPhi_2}")
+        print(f"\033[1;32m > Final result:          Φ = ({flux/1e3:.03f} ± {errPhi/1e3:.03f}) ⨯ 10³ [nb/cm²]\033[0m")
 
     return flux, errPhi
 
