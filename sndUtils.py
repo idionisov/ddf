@@ -249,6 +249,7 @@ class DdfTrack():
         return self.sndRecoTrack.getTrackPoints()
 
 
+
     def IsIP1(self,
         event: Union[ROOT.TChain, ROOT.SNDLHCEventHeader, None] = None
     ) -> Union[bool , None]:
@@ -269,9 +270,9 @@ class DdfTrack():
         if (
             self.Flag and
             self.Mom.Z() and
-            eventHeader.isIP1() and
-            abs(self.XZ) <= self.IP1_Angle and
-            abs(self.YZ) <= self.IP1_Angle
+            eventHeader.isIP1()
+            # abs(self.XZ) <= self.IP1_Angle and
+            # abs(self.YZ) <= self.IP1_Angle
         ):
             return True
         else:
@@ -412,6 +413,16 @@ class DdfTrack():
             return True
         else:
             return False
+
+
+    def GetMeanRes(self):
+        meanResidual = 0
+        points = self.GetPoints()
+        for point in points:
+            extrapolatedPoint = self.GetPointAtZ(point.Z())
+            meanResidual += abs(extrapolatedPoint.X() - point.X()) + abs(extrapolatedPoint.Y() - point.Y())
+        meanResidual /= len(points)
+        return meanResidual
 
 
     def att(self) -> int:
