@@ -3,29 +3,8 @@ import numpy as np
 from time import time
 from typing import Union
 from scipy.stats import beta, norm
+from scipy.optimize import root_scalar
 
-def _getSubDirPath(
-    TopDir:  str,
-    RootDir: str = "/eos/experiment/sndlhc/convertedData/physics",
-) -> str:
-    """
-    Find and return the full path to a subdirectory within a root directory.
-
-    Args:
-        TopDir: Name of the target subdirectory to find
-        RootDir: Root directory path to search in
-
-    Returns:
-        str: Full path to the found subdirectory
-
-    Raises:
-        ValueError: If subdirectory is not found in root directory
-    """
-    for dirPath, dirNames, fileNames in os.walk(RootDir):
-        if TopDir in dirNames:
-            return os.path.join(dirPath, TopDir)
-        else:
-            raise ValueError(f"No subdirectory '{TopDir}' was found in {RootDir}!")
 
 def getSubDirPath(
     TopDir:  str,
@@ -236,3 +215,102 @@ def getEffWithError(
 def getArrayCenters(array, round: int = 2):
     array = np.array(array, dtype=np.float64)
     return np.round(0.5 * (array[:-1] + array[1:]), round)
+
+
+
+
+
+
+def getSystematicVarianceChi2Method(x, statVariances, sysVariances):
+    x = np.asarray(x)
+    N = len(x)
+    statVariances = np.asarray(statVariances)
+    sysVariances = np.asarray(sysVariances)
+
+    xVar = statVariances + sysVariances
+
+
+    def getChi2(s):
+        if s < 0:
+            return np.inf
+        varTotal = xVar + s**2
+        weights = 1 / varTotal
+        xHat = np.sum(x * weights) / np.sum(weights)
+        return np.sum((x - xHat)**2 / varTotal) - (N - 1)
+
+
+    sMax = np.std(x) * 10 + 0.01
+    chiLow = getChi2(1e-10)
+    chiHigh = getChi2(sMax)
+
+    if chiLow * chiHigh > 0:
+        return 0.0
+
+    result = root_scalar(getChi2, bracket=[1e-10, sMax], method='brentq')
+    if not result.converged:
+        raise RuntimeError("Root finding did not converge.")
+
+    return result.root**2
+
+
+
+
+def getFluxWithAllVariances(
+    fluxes, fluxStatVars, fluxSysLVars, fluxSysEffVars, rhoL: float = 0, rhoEff: float = 0.8
+):
+    fluxes = np.asarray(fluxes)
+    N = len(fluxes)
+
+    fluxStatVars = np.asarray(fluxStatVars)
+    fluxSysLVars = np.asarray(fluxSysLVars)
+    fluxSysEffVars = np.asarray(fluxSysEffVars)
+
+    fluxStatSigmas = np.sqrt(fluxStatVars)
+    fluxSysLSigmas = np.sqrt(fluxSysLVars)
+    fluxSysEffSigmas = np.sqrt(fluxSysEffVars)
+
+    # Combine systematic variances
+    fluxSysVars = fluxSysLVars + fluxSysEffVars
+    fluxSysSigmas = np.sqrt(fluxSysVars)
+
+    # Construct total covariance matrix
+    covMat = np.zeros((N, N))
+    for i in range(N):
+        for j in range(N):
+            cov = 0.0
+            if i == j:
+                cov = fluxStatVars[i] + fluxSysVars[i]
+            else:
+                cov += rhoEff * fluxSysEffSigmas[i] * fluxSysEffSigmas[j]
+                cov += rhoL   * fluxSysLSigmas[i] * fluxSysLSigmas[j]
+            covMat[i, j] = cov
+
+    covMatInv = inv(covMat)
+
+    ones = np.ones(N)
+    meanFlux = (ones @ covMatInv @ fluxes) / (ones @ covMatInv @ ones)
+    fluxVar = 1 / (ones @ covMatInv @ ones)
+
+    chi2 = (fluxes - meanFlux) @ covMatInv @ (fluxes - meanFlux)
+    pVal = 1 - chi2_dist.cdf(chi2, df=N - 1)
+
+    def f(s2):
+        denom = fluxStatVars + fluxSysVars + s2
+        weighted_mean = np.sum(fluxes / denom) / np.sum(1 / denom)
+        return np.sum(((fluxes - weighted_mean)**2) / denom) - (N - 1)
+
+    try:
+        sysMethodVar = brentq(f, 0, 1e10)
+    except ValueError:
+        sysMethodVar = 0.0
+
+    return {
+        "flux": meanFlux,
+        "stat": fluxVar,
+        "sysL": np.max(fluxSysLVars),
+        "sysEff": np.max(fluxSysEffVars),
+        "sysMethod": sysMethodVar
+    }, {
+        "chi2": chi2,
+        "pVal": pVal
+    }

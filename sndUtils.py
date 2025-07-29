@@ -662,18 +662,60 @@ def getHitDensityWeight(sfHit, event, scifi):
 
 
 
-# In [28]: for i in mf.index:
-#     ...:     for tt in (1, 11, 3, 13):
-#     ...:         run = mf.at[i, "Run"]
-#     ...:         if not run in nTracks["Run"]:
-#     ...:             continue
-#     ...:         N = getNtracks(run, tt)
-#     ...:         scale = getScale(run)
-#     ...:         dN = np.sqrt(N) * scale
-#     ...:         T = mf.at[i, 'Stable B. time [h]']
-#     ...:         lnT = np.log(T)
-#     ...:         Phi = mf.at[i, f"Flux{tt}_eos"]
-#     ...:         PhiErr = mf.at[i, f"FluxErr{tt}_eos"]
-#     ...:         mf.at[i, f"Omega{tt} = Nln(T)/Phi"] = N*lnT/Phi
-#     ...:         mf.at[i, f"OmegaErr{tt}"] = np.sqrt((lnT*dN/Phi)**2 + ((N*lnT*PhiErr)/(Phi*Phi))**2)
-#     ...:
+def getFluxWithAllVariances(
+    fluxes, fluxStatVars, fluxSysLVars, fluxSysEffVars, rhoEff: float = 0, rhoL: float = 1
+):
+    fluxes = np.asarray(fluxes)
+    N = len(fluxes)
+
+    fluxStatVars = np.asarray(fluxStatVars)
+    fluxSysLVars = np.asarray(fluxSysLVars)
+    fluxSysEffVars = np.asarray(fluxSysEffVars)
+
+    fluxStatSigmas = np.sqrt(fluxStatVars)
+    fluxSysLSigmas = np.sqrt(fluxSysLVars)
+    fluxSysEffSigmas = np.sqrt(fluxSysEffVars)
+
+    fluxSysVars = fluxSysLVars + fluxSysEffVars
+    fluxSysSigmas = np.sqrt(fluxSysVars)
+
+    covMat = np.zeros((N, N))
+    for i in range(N):
+        for j in range(N):
+            cov = 0.0
+            if i == j:
+                cov = fluxStatVars[i] + fluxSysVars[i]
+            else:
+                cov += rhoEff * fluxSysEffSigmas[i] * fluxSysEffSigmas[j]
+                cov += rhoL   * fluxSysLSigmas[i] * fluxSysLSigmas[j]
+            covMat[i, j] = cov
+
+    covMatInv = inv(covMat)
+
+    ones = np.ones(N)
+    meanFlux = (ones @ covMatInv @ fluxes) / (ones @ covMatInv @ ones)
+    fluxVar = 1 / (ones @ covMatInv @ ones)
+
+    chi2 = (fluxes - meanFlux) @ covMatInv @ (fluxes - meanFlux)
+    pVal = 1 - chi2_dist.cdf(chi2, df=N - 1)
+
+    def f(s2):
+        denom = fluxStatVars + fluxSysVars + s2
+        weighted_mean = np.sum(fluxes / denom) / np.sum(1 / denom)
+        return np.sum(((fluxes - weighted_mean)**2) / denom) - (N - 1)
+
+    try:
+        sysMethodVar = brentq(f, 0, 1e10)
+    except ValueError:
+        sysMethodVar = 0.0
+
+    return {
+        "flux": meanFlux,
+        "stat": fluxVar,
+        "sysL": np.max(fluxSysLVars),
+        "sysEff": np.max(fluxSysEffVars),
+        "sysMethod": sysMethodVar
+    }, {
+        "chi2": chi2,
+        "pVal": pVal
+    }
