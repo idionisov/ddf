@@ -1,8 +1,31 @@
+import json
 import os
 from typing import Iterable, Union
 
 import ROOT
 
+
+def write_metadata(
+    metadata: dict,
+    fout: ROOT.TFile,  # Assuming TFile is passed here
+    directory: str = "",
+    close_file: bool = False # New control flag
+):
+    # ... (all file/directory setup logic removed,
+    # as fout is already open and directory is handled by the caller) ...
+
+    metadata_name = metadata.get("name", "metadata")
+    json_str = json.dumps(metadata)
+    root_str = ROOT.TObjString(json_str)
+
+    # Directory management (simplified for integration):
+    current_dir = fout.GetDirectory(directory) if directory else fout
+    current_dir.cd()
+
+    root_str.Write(metadata_name)
+
+    if close_file: # Only close if explicitly told to do so
+        fout.Close()
 
 def save_to_root(
     *objects,
