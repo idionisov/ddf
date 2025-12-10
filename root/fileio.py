@@ -1,7 +1,39 @@
+import json
 import os
 from typing import Iterable, Union
 
 import ROOT
+
+
+def write_metadata(
+    metadata: dict,
+    fout: Union[ROOT.TFile, str],
+    directory: str = "",
+    close_file: bool = True
+):
+    if isinstance(fout, str):
+        if os.path.exists(fout):
+            fout = ROOT.TFile(fout, "update")
+        else:
+            fout = ROOT.TFile(fout, "recreate")
+
+    metadata_name = metadata.get("name", "metadata")
+    json_str = json.dumps(metadata)
+    root_str = ROOT.TObjString(json_str)
+
+    if directory:
+        current_dir = fout.GetDirectory(directory)
+        if not current_dir:
+            current_dir = fout.mkdir(directory)
+    else:
+        current_dir = fout
+
+    current_dir.cd()
+    root_str.Write(metadata_name)
+    if close_file:
+        fout.Close()
+
+
 
 
 def save_to_root(
@@ -10,7 +42,8 @@ def save_to_root(
     directory: str = "",
     print_filename: bool = True,
     nested: bool = False,
-    overwrite: bool = False
+    overwrite: bool = False,
+    metadata: Union[dict, None] = None
 ):
     if isinstance(fout, str):
         if overwrite:
@@ -21,6 +54,8 @@ def save_to_root(
             else:
                 fout = ROOT.TFile(fout, "recreate")
 
+    if metadata is not None:
+        write_metadata(metadata, fout, directory, close_file=False)
 
 
     def recursive_save(obj, current_dir, path=""):
