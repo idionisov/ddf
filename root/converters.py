@@ -1,8 +1,7 @@
 import ROOT
 import uproot
-import utils.teff as teff
-import utils.tgraph as tgraph
-import utils.th1 as th1
+
+from .utils import teff, tgraph, th1
 
 
 def to_numpy(obj, **kwargs):

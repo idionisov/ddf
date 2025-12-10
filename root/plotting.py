@@ -1,7 +1,8 @@
-import converters
 import matplotlib.pyplot as plt
 import pandas as pd
 import ROOT
+
+from . import converters
 
 
 def errplot(obj,
