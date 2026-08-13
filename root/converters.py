@@ -4,43 +4,51 @@ import uproot
 from .utils import teff, tgraph, th1
 
 
-def to_numpy(obj, **kwargs):
-    if not (isinstance(obj, ROOT.TObject) or uproot.Model.is_instance(obj, "TObject")):
+def to_numpy(input_object, **kwargs):
+    if isinstance(input_object, str):
+        input_object = uproot.open(input_object)
+
+    if not (isinstance(input_object, ROOT.TObject) or uproot.Model.is_instance(input_object, "TObject")):
         raise ValueError("Input is neither a ROOT.TObject nor an uproot.TObject instance!")
 
-    elif any(s in str(type(obj)).lower() for s in ("th1", "th2")):
-        return th1.hist_to_numpy(obj, **kwargs)
+    object_type_name = str(type(input_object)).lower()
 
-    elif any(s in str(type(obj)).lower() for s in ("tgraph", "tgraph2d")):
-        return tgraph.graph_to_numpy(obj, **kwargs)
+    if any(type_key in object_type_name for type_key in ("th1", "th2", "tprofile")):
+        return th1.hist_to_numpy(input_object, **kwargs)
 
-    elif isinstance(obj, ROOT.TEfficiency):
-        if obj.GetDimension() > 2:
+    elif any(type_key in object_type_name for type_key in ("tgraph", "tgraph2d")):
+        return tgraph.graph_to_numpy(input_object, **kwargs)
+
+    elif isinstance(input_object, ROOT.TEfficiency) or "tefficiency" in object_type_name:
+        if hasattr(input_object, "GetDimension") and input_object.GetDimension() > 2:
             raise ValueError("The TEfficiency object is not one or two dimensional!")
         else:
-            return teff.teff_to_numpy(obj, **kwargs)
+            return teff.teff_to_numpy(input_object, **kwargs)
 
     else:
-        raise ValueError(f"Type {type(obj)} is cannot be converted to numpy!")
+        raise ValueError(f"Type {type(input_object)} cannot be converted to numpy!")
 
 
+def to_pandas(input_object, **kwargs):
+    if isinstance(input_object, str):
+        input_object = uproot.open(input_object)
 
-
-def to_pandas(obj, **kwargs):
-    if not (isinstance(obj, ROOT.TObject) or uproot.Model.is_instance(obj, "TObject")):
+    if not (isinstance(input_object, ROOT.TObject) or uproot.Model.is_instance(input_object, "TObject")):
         raise ValueError("Input is neither a ROOT.TObject nor an uproot.TObject instance!")
 
-    elif "th1" in str(type(obj)).lower():
-        return th1.hist_to_pandas(obj, **kwargs)
+    object_type_name = str(type(input_object)).lower()
 
-    elif any(s in str(type(obj)).lower() for s in ("tgraph", "tgraph2d")):
-        return tgraph.graph_to_pandas(obj, **kwargs)
+    if any(type_key in object_type_name for type_key in ("th1", "tprofile")):
+        return th1.hist_to_pandas(input_object, **kwargs)
 
-    elif isinstance(obj, ROOT.TEfficiency):
-        if obj.GetDimension() > 2:
+    elif any(type_key in object_type_name for type_key in ("tgraph", "tgraph2d")):
+        return tgraph.graph_to_pandas(input_object, **kwargs)
+
+    elif isinstance(input_object, ROOT.TEfficiency) or "tefficiency" in object_type_name:
+        if hasattr(input_object, "GetDimension") and input_object.GetDimension() > 2:
             raise ValueError("The TEfficiency object is not one or two dimensional!")
         else:
-            return teff.teff_to_numpy(obj, **kwargs)
+            return teff.teff_to_pandas(input_object, **kwargs)
 
     else:
-        raise ValueError(f"Type {type(obj)} is cannot be converted to numpy!")
+        raise ValueError(f"Type {type(input_object)} cannot be converted to pandas!")
