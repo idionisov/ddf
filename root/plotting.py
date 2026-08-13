@@ -280,3 +280,87 @@ def ratio_plot(
             ratio_ax.set_ylim(ratio_min - y_padding, ratio_max + y_padding)
 
     return fig, ax, ratio_ax
+
+
+def stack_plot(
+    input_objects: list,
+    ax=None,
+    labels: list = None,
+    colors: list = None,
+    palette: str = "deep",
+    density: bool = False,
+    alpha: float = 0.7,
+    draw_outline: bool = True,
+    cols: dict = {
+        "x": "x", "y": "y", "z": "z",
+        "ex": "ex", "ey": "ey", "exl": "exl",
+        "exh": "exh", "eyl": "eyl", "eyh": "eyh",
+    },
+    **kwargs
+):
+    """
+    Plot a stack of 1D histograms (ROOT, uproot, or string paths) as cumulative filled step areas.
+    """
+    if not input_objects:
+        raise ValueError("input_objects list cannot be empty!")
+
+    if labels is None:
+        labels = []
+        for obj in input_objects:
+            if isinstance(obj, str):
+                lbl = obj.split(":")[-1] if ":" in obj else obj
+            elif hasattr(obj, "GetName"):
+                lbl = obj.GetName()
+            elif hasattr(obj, "name"):
+                lbl = obj.name
+            else:
+                lbl = "Histogram"
+            labels.append(lbl)
+
+    if colors is None:
+        colors = sns.color_palette(palette, n_colors=len(input_objects))
+
+    y_list = []
+    x_edges_base = None
+    x_centers_base = None
+
+    for obj in input_objects:
+        x_centers, y_values, x_edges, x_errors, y_errors = converters.to_numpy(obj)
+        if x_edges_base is None:
+            x_edges_base = x_edges
+            x_centers_base = x_centers
+        elif len(x_edges) != len(x_edges_base) or not np.allclose(x_edges, x_edges_base):
+            bin_widths = x_edges[1:] - x_edges[:-1]
+            base_widths = x_edges_base[1:] - x_edges_base[:-1]
+            y_dens = y_values / bin_widths
+            y_values = np.interp(x_centers_base, x_centers, y_dens) * base_widths
+
+        y_list.append(y_values)
+
+    y_matrix = np.vstack(y_list)
+    y_cumulative = np.cumsum(y_matrix, axis=0)
+
+    if density:
+        bin_widths = x_edges_base[1:] - x_edges_base[:-1]
+        total_integral = (y_cumulative[-1] * bin_widths).sum()
+        if total_integral > 0:
+            y_cumulative = y_cumulative / total_integral
+
+    target_axes = ax if ax is not None else plt.gca()
+
+    for i in range(len(input_objects)):
+        bottom_layer = y_cumulative[i - 1] if i > 0 else 0
+        target_axes.fill_between(
+            x_edges_base[:-1],
+            bottom_layer,
+            y_cumulative[i],
+            step="post",
+            color=colors[i],
+            alpha=alpha,
+            label=labels[i],
+            **kwargs
+        )
+        if draw_outline:
+            target_axes.step(x_edges_base[:-1], y_cumulative[i], where="post", color="black", linewidth=0.7)
+
+    return target_axes, y_cumulative
